@@ -9,55 +9,56 @@ import (
 	"time"
 )
 
-var marToFebOffsets = []int{
-	0, 31, 61, 92, 122, 153, 184, 214, 245, 275, 306, 337}
-
-var monthLengths = []int{
-	31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
-
-var daysOfWeek = []string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}
-
-// Birthday represents a birthday or date
-type Birthday struct {
-
-	// Year may be 0 if unknown
-	Year int
-
-	// 1=January, 2=February etc.
-	Month int
-
-	Day int
+// YMD creates a new time.Time object in UTC time zone from year, month, day.
+// YMD normalizes invalid year, month, day combinations. For example
+// YMD(2006, 8, 32) == YMD(2006, 9, 1)
+func YMD(year int, month int, day int) time.Time {
+	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 }
 
-// String returns this instance as 'mm/dd' or 'mm/dd/yyyy'
-func (b Birthday) String() string {
-	if !b.YearSet() {
-		return fmt.Sprintf("%02d/%02d", b.Month, b.Day)
+// SafeYMD works like YMD except it returns false if year, month, and day
+// aren't valid.
+func SafeYMD(year, month, day int) (t time.Time, ok bool) {
+	result := YMD(year, month, day)
+	y, m, d := result.Date()
+	if y != year || int(m) != month || d != day {
+		return
 	}
-	return fmt.Sprintf("%02d/%02d/%04d", b.Month, b.Day, b.Year)
+	return result, true
 }
 
-// StringWithWeekDay returns this instance as a string preceded by
-// the day of the week e.g "Thu 10/15/2020" StringWithWeekDay panics
-// if it can't determine the day of the week such as with a birthday
-// that doesn't have a year.
-func (b Birthday) StringWithWeekDay() string {
-	dayOfWeek := b.AsDays() % 7
-	return fmt.Sprintf("%s %s", daysOfWeek[dayOfWeek], b.String())
+// Today returns today's date at midnight in UTC.
+func Today() time.Time {
+	y, m, d := time.Now().Date()
+	return YMD(y, int(m), d)
 }
 
-// Now returns today.
-func Now() Birthday {
-	t := time.Now()
-	return Birthday{Year: t.Year(), Month: int(t.Month()), Day: t.Day()}
+// ToString returns t as MM/dd/yyyy or as just MM/dd if t falls before
+// 1 Jan 0001.
+func ToString(t time.Time) string {
+	if !HasYear(t) {
+		return t.Format("01/02")
+	}
+	return t.Format("01/02/2006")
 }
 
-// Parse converts a string of form 'mm/dd' or 'mm/dd/yyyy' into a Birthday
-// Returns an error if string cannot be parsed.
-func Parse(s string) (birthday Birthday, err error) {
+// ToStringWithWeekday works like ToString but adds weekday.
+// ToStringWithWeekday panics if t falls before 1 Jan 0001.
+func ToStringWithWeekDay(t time.Time) string {
+	if !HasYear(t) {
+		panic("no year")
+	}
+	return t.Format("Mon 01/02/2006")
+}
+
+// Parse converts s to a time in UTC. s must be of form MM/dd/yyyy or
+// MM/dd.  If s is of form MM/dd, the year of returned time is 0.
+// s must be a valid date as no normalizing is done.  Invalid dates like
+// '08/32/2006' return an error.
+func Parse(s string) (parsed time.Time, err error) {
 	parts := strings.Split(s, "/")
 	if len(parts) < 2 || len(parts) > 3 {
-		return Birthday{}, errors.New("must be of form mm/dd or mm/dd/yyyy")
+		return time.Time{}, errors.New("must be of form mm/dd or mm/dd/yyyy")
 	}
 	month, err := strconv.Atoi(parts[0])
 	if err != nil {
@@ -67,113 +68,55 @@ func Parse(s string) (birthday Birthday, err error) {
 	if err != nil {
 		return
 	}
-	var b Birthday
+	var t time.Time
+	var ok bool
 	if len(parts) == 2 {
-		b = Birthday{Month: month, Day: day}
+		t, ok = SafeYMD(0, month, day)
 	} else {
 		var year int
 		year, err = strconv.Atoi(parts[2])
 		if err != nil {
 			return
 		}
-		b = Birthday{Year: year, Month: month, Day: day}
+		t, ok = SafeYMD(year, month, day)
 	}
-	birthday = b
-	return
+	if !ok {
+		return time.Time{}, fmt.Errorf("Invalid date: %s", s)
+	}
+	return t, nil
 }
 
-// YearSet returns true if Year field is set.
-func (b Birthday) YearSet() bool {
-	return b.Year > 0
+// AsDays returns the day number for t. 0 is 1 Jan 1970; 1 is 2 Jan 1970 etc.
+func AsDays(t time.Time) int {
+	unix := t.Unix()
+	days := int(unix / 86400)
+	seconds := int(unix % 86400)
+	if seconds < 0 {
+		days--
+	}
+	return days
 }
 
-// IsValid returns true if this birthday is valid. That is the Month and Day
-// fields are within range.
-func (b Birthday) IsValid() bool {
-	if b.Month < 1 || b.Month > 12 {
-		return false
-	}
-	daysInMonth := monthLengths[b.Month-1]
-	if b.Month == 2 && (b.Year <= 0 || isLeapYear(b.Year)) {
-		daysInMonth += 1
-	}
-	return b.Day >= 1 && b.Day <= daysInMonth
+// FromDays converts a day number to a time. Returned time is always in UTC.
+func FromDays(days int) time.Time {
+	return time.Unix(int64(days)*86400, 0).UTC()
 }
 
-// Normalize returns an equivalent valid Birthday for this Birthday. For
-// example 08/32/2020 -> 09/01/2020. Normalize panics if this Birthday
-// represents a day before 1 Jan 0001.
-func (b Birthday) Normalize() Birthday {
-	return FromDays(b.AsDays())
+// HasYear returns true if t has a year. That is t falls on or after
+// 1 Jan 0001
+func HasYear(t time.Time) bool {
+	return t.Year() > 0
 }
 
-// AsDays returns this birthday as days since 31 Dec 0000.
-// AsDays panics if this birthday falls before 1 Jan 0001.
-// AsDays() % 7 gives the day of the week. 0=Sunday, 1=Monday, etc.
-func (b Birthday) AsDays() int {
-	years := b.Month / 12
-	months := b.Month % 12
-	ymNormalized := Birthday{Year: b.Year + years, Month: months, Day: b.Day}
-	if ymNormalized.Month <= 0 {
-		ymNormalized.Month += 12
-		ymNormalized.Year--
+// DiffInYears returns the number of years between start and end rounded down.
+func DiffInYears(end, start time.Time) int {
+	eyear, emonth, eday := end.Date()
+	syear, smonth, sday := start.Date()
+	diff := eyear - syear
+	if emonth < smonth || (emonth == smonth && eday < sday) {
+		diff--
 	}
-	return ymNormalized.asDays()
-}
-
-func (b Birthday) asDays() int {
-	if !b.YearSet() {
-		panic("normalized year is 0 or less.")
-	}
-	year := b.Year
-	monthIndex := b.Month - 3
-	if monthIndex < 0 {
-		year--
-		monthIndex += 12
-	}
-	leapDays := (year / 4) - (year / 100) + (year / 400)
-	result := 365*year + leapDays
-	result += marToFebOffsets[monthIndex] + (b.Day - 1)
-
-	// Make it so that 1 Jan 0001 is day 1. That day happens to be Monday
-	result -= 305
-	if result <= 0 {
-		panic("birthday falls before 1 Jan 0001")
-	}
-	return result
-}
-
-// FromDays is the inverse of AsDays. FromDays always returns a normalized
-// birthday. FromDays panics if days <= 0.
-func FromDays(days int) Birthday {
-	if days <= 0 {
-		panic("Days must be at least 1")
-	}
-	days += 305
-	year400 := days / 146097
-	days -= year400 * 146097
-	year100 := days / 36524
-	if year100 == 4 {
-		year100 = 3
-	}
-	days -= year100 * 36524
-	year4 := days / 1461
-	days -= year4 * 1461
-	year1 := days / 365
-	if year1 == 4 {
-		year1 = 3
-	}
-	days -= year1 * 365
-	year := year400*400 + year100*100 + year4*4 + year1
-	monthIndex := 11
-	for marToFebOffsets[monthIndex] > days {
-		monthIndex--
-	}
-	day := days - marToFebOffsets[monthIndex]
-	if monthIndex < 10 {
-		return Birthday{Year: year, Month: monthIndex + 3, Day: day + 1}
-	}
-	return Birthday{Year: year + 1, Month: monthIndex - 9, Day: day + 1}
+	return diff
 }
 
 // Milestone represents a milestone day.
@@ -183,7 +126,7 @@ type Milestone struct {
 	Name string
 
 	// The date of the milestone day
-	Date Birthday
+	Date time.Time
 
 	// How many days in the future this milestone day is.
 	DaysAway int
@@ -199,29 +142,24 @@ type Milestone struct {
 // Caller adds people with the Add() method then the caller calls Reminders()
 // to see all the people with upcoming milestones.
 type Remind struct {
-	currentDate Birthday
-	currentDay  int
+	currentDate time.Time
 	daysAhead   int
 	milestones  []Milestone
 }
 
 // NewRemind creates a new Remind instance. currentDate is the current date.
 // daysAhead controls how many days in the future milestones can be.
-func NewRemind(currentDate Birthday, daysAhead int) *Remind {
+func NewRemind(currentDate time.Time, daysAhead int) *Remind {
 	return &Remind{
-		currentDate: currentDate.Normalize(),
-		currentDay:  currentDate.AsDays(),
+		currentDate: currentDate,
 		daysAhead:   daysAhead}
 }
 
-// Add adds a person. Add panics if b is invalid.
-func (r *Remind) Add(name string, b Birthday) {
-	if !b.IsValid() {
-		panic("b must be valid")
-	}
-	r.addYearMilestones(name, b)
-	if b.YearSet() {
-		r.addDayMilestones(name, b)
+// Add adds a person.
+func (r *Remind) Add(name string, bday time.Time) {
+	r.addYearMilestones(name, bday)
+	if HasYear(bday) {
+		r.addDayMilestones(name, bday)
 	}
 }
 
@@ -237,59 +175,47 @@ func (r *Remind) Reminders() []Milestone {
 	return result
 }
 
-func (r *Remind) addYearMilestones(name string, b Birthday) {
-	nextMilestone := b
-	if !nextMilestone.YearSet() || nextMilestone.AsDays() < r.currentDay {
-		nextMilestone.Year = r.currentDate.Year
+func (r *Remind) addYearMilestones(name string, bday time.Time) {
+	hasYear := HasYear(bday)
+	nextAge := DiffInYears(r.currentDate.AddDate(0, 0, -1), bday) + 1
+	if nextAge < 0 {
+		nextAge = 0
 	}
-	if nextMilestone.AsDays() < r.currentDay {
-		nextMilestone.Year++
-	}
-	daysAway := nextMilestone.AsDays() - r.currentDay
+	nextMilestone := bday.AddDate(nextAge, 0, 0)
+	daysAway := AsDays(nextMilestone) - AsDays(r.currentDate)
 	for daysAway < r.daysAhead {
 		age := -1
-		if b.YearSet() {
-			age = nextMilestone.Year - b.Year
+		if hasYear {
+			age = nextAge
 		}
 		r.milestones = append(r.milestones, Milestone{
 			Name:     name,
-			Date:     nextMilestone.Normalize(),
+			Date:     nextMilestone,
 			DaysAway: daysAway,
 			Age:      age,
 		})
-		nextMilestone.Year++
-		daysAway = nextMilestone.AsDays() - r.currentDay
+		nextAge++
+		nextMilestone = bday.AddDate(nextAge, 0, 0)
+		daysAway = AsDays(nextMilestone) - AsDays(r.currentDate)
 	}
 }
 
-func (r *Remind) addDayMilestones(name string, b Birthday) {
-	bAsDays := b.AsDays()
+func (r *Remind) addDayMilestones(name string, bday time.Time) {
+	bAsDays := AsDays(bday)
 	nextMilestoneAsDays := bAsDays
-	if nextMilestoneAsDays < r.currentDay {
-		diff := r.currentDay - nextMilestoneAsDays
+	currentDay := AsDays(r.currentDate)
+	if nextMilestoneAsDays < currentDay {
+		diff := currentDay - nextMilestoneAsDays
 		nextMilestoneAsDays += ((diff + 999) / 1000) * 1000
 	}
-	for nextMilestoneAsDays-r.currentDay < r.daysAhead {
+	for nextMilestoneAsDays-currentDay < r.daysAhead {
 		r.milestones = append(r.milestones, Milestone{
 			Name:      name,
 			Date:      FromDays(nextMilestoneAsDays),
-			DaysAway:  nextMilestoneAsDays - r.currentDay,
+			DaysAway:  nextMilestoneAsDays - currentDay,
 			Age:       nextMilestoneAsDays - bAsDays,
 			AgeInDays: true,
 		})
 		nextMilestoneAsDays += 1000
 	}
-}
-
-func isLeapYear(year int) bool {
-	if year%400 == 0 {
-		return true
-	}
-	if year%100 == 0 {
-		return false
-	}
-	if year%4 == 0 {
-		return true
-	}
-	return false
 }

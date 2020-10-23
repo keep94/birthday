@@ -41,7 +41,7 @@ var (
     {{with $top := .}}
     {{range .Milestones}}
     <tr>
-      <td {{if $top.Today .}}class="today"{{end}}>{{.Date.StringWithWeekDay}}</td>
+      <td {{if $top.Today .}}class="today"{{end}}>{{$top.DateStr .}}</td>
       <td {{if $top.Today .}}class="today"{{end}}>{{.Name}}</td>
       <td {{if $top.Today .}}class="today"{{end}}>{{$top.AgeStr .}}</td>
     </tr>
@@ -62,7 +62,7 @@ type Handler struct {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	milestones, err := birthday.ReadFile(h.File, birthday.Now(), h.DaysAhead)
+	milestones, err := birthday.ReadFile(h.File, birthday.Today(), h.DaysAhead)
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
@@ -72,6 +72,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 type view struct {
 	Milestones []birthday.Milestone
+}
+
+func (b *view) DateStr(milestone birthday.Milestone) string {
+	return birthday.ToStringWithWeekDay(milestone.Date)
 }
 
 func (v *view) AgeStr(milestone birthday.Milestone) string {

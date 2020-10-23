@@ -22,7 +22,7 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	milestones, err := birthday.ReadFile(fFile, birthday.Now(), fDaysAhead)
+	milestones, err := birthday.ReadFile(fFile, birthday.Today(), fDaysAhead)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -38,7 +38,7 @@ func main() {
 		fmt.Printf(
 			"%s %14s %5s %s\n",
 			astricks,
-			milestone.Date.StringWithWeekDay(),
+			birthday.ToStringWithWeekDay(milestone.Date),
 			ageStr,
 			milestone.Name)
 	}
