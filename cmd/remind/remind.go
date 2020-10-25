@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/context"
 	"github.com/keep94/birthday/cmd/remind/home"
+	"github.com/keep94/birthday/cmd/remind/search"
 	"github.com/keep94/toolbox/http_util"
 	"github.com/keep94/toolbox/logging"
 	"github.com/keep94/weblogs"
@@ -28,6 +29,7 @@ func main() {
 	}
 	http.HandleFunc("/", rootRedirect)
 	http.Handle("/home", &home.Handler{File: fFile, DaysAhead: fDaysAhead})
+	http.Handle("/search", &search.Handler{File: fFile})
 	defaultHandler := context.ClearHandler(
 		weblogs.HandlerWithOptions(
 			http.DefaultServeMux,

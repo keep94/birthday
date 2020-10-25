@@ -7,19 +7,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-// YMD creates a new time.Time object in UTC time zone from year, month, day.
-// YMD normalizes invalid year, month, day combinations. For example
-// YMD(2006, 8, 32) == YMD(2006, 9, 1)
-func YMD(year int, month int, day int) time.Time {
-	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-}
+	"github.com/keep94/toolbox/date_util"
+	"github.com/keep94/toolbox/str_util"
+)
 
 // SafeYMD works like YMD except it returns false if year, month, and day
 // aren't valid.
 func SafeYMD(year, month, day int) (t time.Time, ok bool) {
-	result := YMD(year, month, day)
+	result := date_util.YMD(year, month, day)
 	y, m, d := result.Date()
 	if y != year || int(m) != month || d != day {
 		return
@@ -30,7 +26,7 @@ func SafeYMD(year, month, day int) (t time.Time, ok bool) {
 // Today returns today's date at midnight in UTC.
 func Today() time.Time {
 	y, m, d := time.Now().Date()
-	return YMD(y, int(m), d)
+	return date_util.YMD(y, int(m), d)
 }
 
 // ToString returns t as MM/dd/yyyy or as just MM/dd if t falls before
@@ -132,6 +128,7 @@ type Milestone struct {
 	DaysAway int
 
 	// The age of the person on this mileestone day in years or days.
+	// -1 if age of person is unknown.
 	Age int
 
 	// Set to true if age is in days
@@ -218,4 +215,63 @@ func (r *Remind) addDayMilestones(name string, bday time.Time) {
 		})
 		nextMilestoneAsDays += 1000
 	}
+}
+
+// Person represents a person
+type Person struct {
+	// Name of person
+	Name string
+
+	// Birthday of person
+	Birthday time.Time
+
+	// Age in years. 0 if age unknown
+	AgeInYears int
+
+	// Age in days. 0 if age unknown
+	AgeInDays int
+}
+
+// Filter filters people by name
+type Filter struct {
+	currentDate time.Time
+	query       string
+	persons     []Person
+}
+
+// NewFilter returns a new Filter. query is a search string. Searches ignore
+// case and extra whitespace.
+func NewFilter(currentDate time.Time, query string) *Filter {
+	return &Filter{currentDate: currentDate, query: str_util.Normalize(query)}
+}
+
+// Add adds a person. If name does not match the query of this instance,
+// add does nothing.
+func (f *Filter) Add(name string, birthday time.Time) {
+	if strings.Contains(str_util.Normalize(name), f.query) {
+		ageInYears := 0
+		ageInDays := 0
+		if HasYear(birthday) {
+			ageInYears = DiffInYears(f.currentDate, birthday)
+			ageInDays = AsDays(f.currentDate) - AsDays(birthday)
+		}
+		f.persons = append(f.persons, Person{
+			Name:       name,
+			Birthday:   birthday,
+			AgeInYears: ageInYears,
+			AgeInDays:  ageInDays,
+		})
+	}
+}
+
+// Persons returns the people that match the query string for this instance
+// sorted by name.
+func (f *Filter) Persons() []Person {
+	result := make([]Person, len(f.persons))
+	copy(result, f.persons)
+	sort.SliceStable(
+		result,
+		func(i, j int) bool { return result[i].Name < result[j].Name },
+	)
+	return result
 }
