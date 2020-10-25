@@ -37,15 +37,15 @@ func TestFromDays(t *testing.T) {
 	assert.Equal(birthday.YMD(1950, 1, 1), birthday.FromDays(-7305))
 }
 
-func TestInYears(t *testing.T) {
+func TestDiffInYears(t *testing.T) {
 	assert := asserts.New(t)
 	end := birthday.YMD(1951, 2, 15)
-	assert.Equal(0, birthday.InYears(end, birthday.YMD(1951, 2, 15)))
-	assert.Equal(-1, birthday.InYears(end, birthday.YMD(1951, 2, 16)))
-	assert.Equal(-1, birthday.InYears(end, birthday.YMD(1951, 3, 1)))
-	assert.Equal(0, birthday.InYears(end, birthday.YMD(1951, 2, 14)))
-	assert.Equal(0, birthday.InYears(end, birthday.YMD(1951, 1, 31)))
-	assert.Equal(3, birthday.InYears(end, birthday.YMD(1948, 2, 15)))
+	assert.Equal(0, birthday.DiffInYears(end, birthday.YMD(1951, 2, 15)))
+	assert.Equal(-1, birthday.DiffInYears(end, birthday.YMD(1951, 2, 16)))
+	assert.Equal(-1, birthday.DiffInYears(end, birthday.YMD(1951, 3, 1)))
+	assert.Equal(0, birthday.DiffInYears(end, birthday.YMD(1951, 2, 14)))
+	assert.Equal(0, birthday.DiffInYears(end, birthday.YMD(1951, 1, 31)))
+	assert.Equal(3, birthday.DiffInYears(end, birthday.YMD(1948, 2, 15)))
 }
 
 func TestToString(t *testing.T) {
