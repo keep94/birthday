@@ -62,11 +62,13 @@ type Handler struct {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	milestones, err := birthday.ReadFile(h.File, birthday.Today(), h.DaysAhead)
+	reminder := birthday.NewReminder(birthday.Today(), h.DaysAhead)
+	err := birthday.ReadFile(h.File, reminder)
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
 	}
+	milestones := reminder.Milestones()
 	http_util.WriteTemplate(w, kTemplate, &view{Milestones: milestones})
 }
 

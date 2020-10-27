@@ -49,7 +49,7 @@ var (
       <th>In Days</th>
     </tr>
     {{with $top := .}}
-    {{range .Persons}}
+    {{range .Results}}
     <tr>
       <td>{{.Name}}</td>
       <td>{{$top.BirthdayStr .}}</td>
@@ -73,37 +73,37 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	persons, err := birthday.ReadPersonsFromFile(
-		h.File, birthday.Today(), r.Form.Get("q"))
+	search := birthday.NewSearch(birthday.Today(), r.Form.Get("q"))
+	err := birthday.ReadFile(h.File, search)
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
 	}
 	http_util.WriteTemplate(w, kTemplate, &view{
 		Values:  http_util.Values{r.Form},
-		Persons: persons,
+		Results: search.Results(),
 	})
 }
 
 type view struct {
 	http_util.Values
-	Persons []birthday.Person
+	Results []birthday.Result
 }
 
-func (b *view) BirthdayStr(person birthday.Person) string {
-	return birthday.ToString(person.Birthday)
+func (b *view) BirthdayStr(result birthday.Result) string {
+	return birthday.ToString(result.Birthday)
 }
 
-func (v *view) InYearsStr(person birthday.Person) string {
-	if birthday.HasYear(person.Birthday) {
-		return strconv.Itoa(person.AgeInYears)
+func (v *view) InYearsStr(result birthday.Result) string {
+	if birthday.HasYear(result.Birthday) {
+		return strconv.Itoa(result.AgeInYears)
 	}
 	return "--"
 }
 
-func (v *view) InDaysStr(person birthday.Person) string {
-	if birthday.HasYear(person.Birthday) {
-		return strconv.Itoa(person.AgeInDays)
+func (v *view) InDaysStr(result birthday.Result) string {
+	if birthday.HasYear(result.Birthday) {
+		return strconv.Itoa(result.AgeInDays)
 	}
 	return "--"
 }

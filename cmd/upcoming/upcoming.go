@@ -22,11 +22,12 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	milestones, err := birthday.ReadFile(fFile, birthday.Today(), fDaysAhead)
+	reminder := birthday.NewReminder(birthday.Today(), fDaysAhead)
+	err := birthday.ReadFile(fFile, reminder)
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, milestone := range milestones {
+	for _, milestone := range reminder.Milestones() {
 		ageStr := "?????"
 		if milestone.Age != -1 {
 			ageStr = strconv.Itoa(milestone.Age)

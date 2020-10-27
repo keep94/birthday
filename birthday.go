@@ -115,6 +115,12 @@ func DiffInYears(end, start time.Time) int {
 	return diff
 }
 
+// Entry represents a single entry in the birthday database
+type Entry struct {
+	Name     string
+	Birthday time.Time
+}
+
 // Milestone represents a milestone day.
 type Milestone struct {
 
@@ -135,34 +141,35 @@ type Milestone struct {
 	AgeInDays bool
 }
 
-// Remind reminds of upcoming milestones for people.
-// Caller adds people with the Add() method then the caller calls Reminders()
-// to see all the people with upcoming milestones.
-type Remind struct {
+// Reminder reminds of upcoming milestones for people.
+// Caller adds people with the Consume() method then the caller calls
+// Milestones() to see all the people with upcoming milestones.
+type Reminder struct {
 	currentDate time.Time
 	daysAhead   int
 	milestones  []Milestone
 }
 
-// NewRemind creates a new Remind instance. currentDate is the current date.
-// daysAhead controls how many days in the future milestones can be.
-func NewRemind(currentDate time.Time, daysAhead int) *Remind {
-	return &Remind{
+// NewReminder creates a new Reminder instance. currentDate is the current
+// date. daysAhead controls how many days in the future milestones can be.
+func NewReminder(currentDate time.Time, daysAhead int) *Reminder {
+	return &Reminder{
 		currentDate: currentDate,
 		daysAhead:   daysAhead}
 }
 
-// Add adds a person.
-func (r *Remind) Add(name string, bday time.Time) {
-	r.addYearMilestones(name, bday)
-	if HasYear(bday) {
-		r.addDayMilestones(name, bday)
+// Consume consumes an entry.
+func (r *Reminder) Consume(e *Entry) {
+	r.addYearMilestones(e)
+	if HasYear(e.Birthday) {
+		r.addDayMilestones(e)
 	}
 }
 
-// Reminders returns upcoming reminders for people added so far. Milestones
-// happening soonest come first followed by milestones happining later.
-func (r *Remind) Reminders() []Milestone {
+// Milestones returns upcoming milestones for people consumed so far.
+// Milestones happening soonest come first followed by milestones happining
+// later.
+func (r *Reminder) Milestones() []Milestone {
 	result := make([]Milestone, len(r.milestones))
 	copy(result, r.milestones)
 	sort.SliceStable(
@@ -172,13 +179,13 @@ func (r *Remind) Reminders() []Milestone {
 	return result
 }
 
-func (r *Remind) addYearMilestones(name string, bday time.Time) {
-	hasYear := HasYear(bday)
-	nextAge := DiffInYears(r.currentDate.AddDate(0, 0, -1), bday) + 1
+func (r *Reminder) addYearMilestones(e *Entry) {
+	hasYear := HasYear(e.Birthday)
+	nextAge := DiffInYears(r.currentDate.AddDate(0, 0, -1), e.Birthday) + 1
 	if nextAge < 0 {
 		nextAge = 0
 	}
-	nextMilestone := bday.AddDate(nextAge, 0, 0)
+	nextMilestone := e.Birthday.AddDate(nextAge, 0, 0)
 	daysAway := AsDays(nextMilestone) - AsDays(r.currentDate)
 	for daysAway < r.daysAhead {
 		age := -1
@@ -186,19 +193,19 @@ func (r *Remind) addYearMilestones(name string, bday time.Time) {
 			age = nextAge
 		}
 		r.milestones = append(r.milestones, Milestone{
-			Name:     name,
+			Name:     e.Name,
 			Date:     nextMilestone,
 			DaysAway: daysAway,
 			Age:      age,
 		})
 		nextAge++
-		nextMilestone = bday.AddDate(nextAge, 0, 0)
+		nextMilestone = e.Birthday.AddDate(nextAge, 0, 0)
 		daysAway = AsDays(nextMilestone) - AsDays(r.currentDate)
 	}
 }
 
-func (r *Remind) addDayMilestones(name string, bday time.Time) {
-	bAsDays := AsDays(bday)
+func (r *Reminder) addDayMilestones(e *Entry) {
+	bAsDays := AsDays(e.Birthday)
 	nextMilestoneAsDays := bAsDays
 	currentDay := AsDays(r.currentDate)
 	if nextMilestoneAsDays < currentDay {
@@ -207,7 +214,7 @@ func (r *Remind) addDayMilestones(name string, bday time.Time) {
 	}
 	for nextMilestoneAsDays-currentDay < r.daysAhead {
 		r.milestones = append(r.milestones, Milestone{
-			Name:      name,
+			Name:      e.Name,
 			Date:      FromDays(nextMilestoneAsDays),
 			DaysAway:  nextMilestoneAsDays - currentDay,
 			Age:       nextMilestoneAsDays - bAsDays,
@@ -217,8 +224,9 @@ func (r *Remind) addDayMilestones(name string, bday time.Time) {
 	}
 }
 
-// Person represents a person
-type Person struct {
+// Result represents a search result
+type Result struct {
+
 	// Name of person
 	Name string
 
@@ -232,43 +240,42 @@ type Person struct {
 	AgeInDays int
 }
 
-// Filter filters people by name
-type Filter struct {
+// Search searches for people by name
+type Search struct {
 	currentDate time.Time
 	query       string
-	persons     []Person
+	results     []Result
 }
 
-// NewFilter returns a new Filter. query is a search string. Searches ignore
+// NewSearch returns a new search. query is a search string. Searches ignore
 // case and extra whitespace.
-func NewFilter(currentDate time.Time, query string) *Filter {
-	return &Filter{currentDate: currentDate, query: str_util.Normalize(query)}
+func NewSearch(currentDate time.Time, query string) *Search {
+	return &Search{currentDate: currentDate, query: str_util.Normalize(query)}
 }
 
-// Add adds a person. If name does not match the query of this instance,
-// add does nothing.
-func (f *Filter) Add(name string, birthday time.Time) {
-	if strings.Contains(str_util.Normalize(name), f.query) {
+// Consume consumes an entry.
+func (s *Search) Consume(e *Entry) {
+	if strings.Contains(str_util.Normalize(e.Name), s.query) {
 		ageInYears := 0
 		ageInDays := 0
-		if HasYear(birthday) {
-			ageInYears = DiffInYears(f.currentDate, birthday)
-			ageInDays = AsDays(f.currentDate) - AsDays(birthday)
+		if HasYear(e.Birthday) {
+			ageInYears = DiffInYears(s.currentDate, e.Birthday)
+			ageInDays = AsDays(s.currentDate) - AsDays(e.Birthday)
 		}
-		f.persons = append(f.persons, Person{
-			Name:       name,
-			Birthday:   birthday,
+		s.results = append(s.results, Result{
+			Name:       e.Name,
+			Birthday:   e.Birthday,
 			AgeInYears: ageInYears,
 			AgeInDays:  ageInDays,
 		})
 	}
 }
 
-// Persons returns the people that match the query string for this instance
+// Results returns the results that match the query string for this instance
 // sorted by name.
-func (f *Filter) Persons() []Person {
-	result := make([]Person, len(f.persons))
-	copy(result, f.persons)
+func (s *Search) Results() []Result {
+	result := make([]Result, len(s.results))
+	copy(result, s.results)
 	sort.SliceStable(
 		result,
 		func(i, j int) bool { return result[i].Name < result[j].Name },
