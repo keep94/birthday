@@ -1,3 +1,4 @@
+// Package birthday contains routines for tracking birthdays.
 package birthday
 
 import (
@@ -106,19 +107,89 @@ func HasYear(t time.Time) bool {
 
 // DiffInYears returns the number of years between start and end rounded down.
 func DiffInYears(end, start time.Time) int {
-	eyear, emonth, eday := end.Date()
+	return floorDiv(DiffInMonths(end, start), 12)
+}
+
+// DiffInMonths returns the number of months between start and end rounded
+// down.
+func DiffInMonths(end, start time.Time) int {
 	syear, smonth, sday := start.Date()
-	diff := eyear - syear
-	if emonth < smonth || (emonth == smonth && eday < sday) {
-		diff--
-	}
-	return diff
+	end = end.AddDate(0, 0, 1-sday)
+	eyear, emonth, _ := end.Date()
+	return (eyear-syear)*12 + int(emonth) - int(smonth)
+}
+
+// DiffInWeeks returns the number of weeks between start and end rounded down
+func DiffInWeeks(end, start time.Time) int {
+	return floorDiv(AsDays(end)-AsDays(start), 7)
+}
+
+// DiffInDays returns the number of days between start and end rounded down
+func DiffInDays(end, start time.Time) int {
+	return AsDays(end) - AsDays(start)
 }
 
 // Entry represents a single entry in the birthday database
 type Entry struct {
 	Name     string
 	Birthday time.Time
+}
+
+// Unit is unit of time.
+type Unit int
+
+const (
+	Years Unit = iota
+	Months
+	Weeks
+	Days
+)
+
+func (u Unit) String() string {
+	switch u {
+	case Years:
+		return "years"
+	case Months:
+		return "months"
+	case Weeks:
+		return "weeks"
+	case Days:
+		return "days"
+	default:
+		return "unknown"
+	}
+}
+
+// Diff returns the number of this unit between start and end rounded down.
+func (u Unit) Diff(end, start time.Time) int {
+	switch u {
+	case Years:
+		return DiffInYears(end, start)
+	case Months:
+		return DiffInMonths(end, start)
+	case Weeks:
+		return DiffInWeeks(end, start)
+	case Days:
+		return DiffInDays(end, start)
+	default:
+		panic("unknown unit")
+	}
+}
+
+// Add returns start plus x of this unit.
+func (u Unit) Add(start time.Time, x int) time.Time {
+	switch u {
+	case Years:
+		return start.AddDate(x, 0, 0)
+	case Months:
+		return start.AddDate(0, x, 0)
+	case Weeks:
+		return start.AddDate(0, 0, 7*x)
+	case Days:
+		return start.AddDate(0, 0, x)
+	default:
+		panic("unknown unit")
+	}
 }
 
 // Milestone represents a milestone day.
@@ -133,12 +204,30 @@ type Milestone struct {
 	// How many days in the future this milestone day is.
 	DaysAway int
 
-	// The age of the person on this mileestone day in years or days.
+	// The age of the person on this mileestone day.
 	// -1 if age of person is unknown.
 	Age int
 
-	// Set to true if age is in days
-	AgeInDays bool
+	// The age units of the person. e.g Years, Weeks, Days, etc.
+	Unit Unit
+}
+
+// Types contains what milestone types a Reminder instance will give
+type Types struct {
+	Years         bool
+	HundredMonths bool
+	HundredWeeks  bool
+	ThousandDays  bool
+}
+
+// Flip returns the opposite of this instance.
+func (t Types) Flip() Types {
+	return Types{
+		Years:         !t.Years,
+		HundredMonths: !t.HundredMonths,
+		HundredWeeks:  !t.HundredWeeks,
+		ThousandDays:  !t.ThousandDays,
+	}
 }
 
 // Reminder reminds of upcoming milestones for people.
@@ -147,22 +236,42 @@ type Milestone struct {
 type Reminder struct {
 	currentDate time.Time
 	daysAhead   int
+	types       Types
 	milestones  []Milestone
 }
 
 // NewReminder creates a new Reminder instance. currentDate is the current
 // date. daysAhead controls how many days in the future milestones can be.
 func NewReminder(currentDate time.Time, daysAhead int) *Reminder {
-	return &Reminder{
+	result := &Reminder{
 		currentDate: currentDate,
-		daysAhead:   daysAhead}
+		daysAhead:   daysAhead,
+		types:       Types{}.Flip()}
+	return result
+}
+
+// SetTypes sets the milestone types this instance will give. The default
+// is all types.
+func (r *Reminder) SetTypes(types Types) {
+	r.types = types
 }
 
 // Consume consumes an entry.
 func (r *Reminder) Consume(e *Entry) {
-	r.addYearMilestones(e)
-	if HasYear(e.Birthday) {
-		r.addDayMilestones(e)
+	if r.types.Years {
+		r.addUnitMilestones(e, 1, Years)
+	}
+	if !HasYear(e.Birthday) {
+		return
+	}
+	if r.types.HundredMonths {
+		r.addUnitMilestones(e, 100, Months)
+	}
+	if r.types.HundredWeeks {
+		r.addUnitMilestones(e, 100, Weeks)
+	}
+	if r.types.ThousandDays {
+		r.addUnitMilestones(e, 1000, Days)
 	}
 }
 
@@ -179,13 +288,14 @@ func (r *Reminder) Milestones() []Milestone {
 	return result
 }
 
-func (r *Reminder) addYearMilestones(e *Entry) {
+func (r *Reminder) addUnitMilestones(e *Entry, num int, unit Unit) {
 	hasYear := HasYear(e.Birthday)
-	nextAge := DiffInYears(r.currentDate.AddDate(0, 0, -1), e.Birthday) + 1
+	yesterday := r.currentDate.AddDate(0, 0, -1)
+	nextAge := floorDiv(unit.Diff(yesterday, e.Birthday), num)*num + num
 	if nextAge < 0 {
 		nextAge = 0
 	}
-	nextMilestone := e.Birthday.AddDate(nextAge, 0, 0)
+	nextMilestone := unit.Add(e.Birthday, nextAge)
 	daysAway := AsDays(nextMilestone) - AsDays(r.currentDate)
 	for daysAway < r.daysAhead {
 		age := -1
@@ -197,88 +307,52 @@ func (r *Reminder) addYearMilestones(e *Entry) {
 			Date:     nextMilestone,
 			DaysAway: daysAway,
 			Age:      age,
+			Unit:     unit,
 		})
-		nextAge++
-		nextMilestone = e.Birthday.AddDate(nextAge, 0, 0)
+		nextAge += num
+		nextMilestone = unit.Add(e.Birthday, nextAge)
 		daysAway = AsDays(nextMilestone) - AsDays(r.currentDate)
 	}
 }
 
-func (r *Reminder) addDayMilestones(e *Entry) {
-	bAsDays := AsDays(e.Birthday)
-	nextMilestoneAsDays := bAsDays
-	currentDay := AsDays(r.currentDate)
-	if nextMilestoneAsDays < currentDay {
-		diff := currentDay - nextMilestoneAsDays
-		nextMilestoneAsDays += ((diff + 999) / 1000) * 1000
-	}
-	for nextMilestoneAsDays-currentDay < r.daysAhead {
-		r.milestones = append(r.milestones, Milestone{
-			Name:      e.Name,
-			Date:      FromDays(nextMilestoneAsDays),
-			DaysAway:  nextMilestoneAsDays - currentDay,
-			Age:       nextMilestoneAsDays - bAsDays,
-			AgeInDays: true,
-		})
-		nextMilestoneAsDays += 1000
-	}
-}
-
-// Result represents a search result
-type Result struct {
-
-	// Name of person
-	Name string
-
-	// Birthday of person
-	Birthday time.Time
-
-	// Age in years. 0 if age unknown
-	AgeInYears int
-
-	// Age in days. 0 if age unknown
-	AgeInDays int
-}
-
 // Search searches for people by name
 type Search struct {
-	currentDate time.Time
-	query       string
-	results     []Result
+	query   string
+	entries []Entry
 }
 
 // NewSearch returns a new search. query is a search string. Searches ignore
 // case and extra whitespace.
-func NewSearch(currentDate time.Time, query string) *Search {
-	return &Search{currentDate: currentDate, query: str_util.Normalize(query)}
+func NewSearch(query string) *Search {
+	return &Search{query: str_util.Normalize(query)}
 }
 
 // Consume consumes an entry.
 func (s *Search) Consume(e *Entry) {
 	if strings.Contains(str_util.Normalize(e.Name), s.query) {
-		ageInYears := 0
-		ageInDays := 0
-		if HasYear(e.Birthday) {
-			ageInYears = DiffInYears(s.currentDate, e.Birthday)
-			ageInDays = AsDays(s.currentDate) - AsDays(e.Birthday)
-		}
-		s.results = append(s.results, Result{
-			Name:       e.Name,
-			Birthday:   e.Birthday,
-			AgeInYears: ageInYears,
-			AgeInDays:  ageInDays,
-		})
+		s.entries = append(s.entries, *e)
 	}
 }
 
 // Results returns the results that match the query string for this instance
 // sorted by name.
-func (s *Search) Results() []Result {
-	result := make([]Result, len(s.results))
-	copy(result, s.results)
+func (s *Search) Results() []Entry {
+	result := make([]Entry, len(s.entries))
+	copy(result, s.entries)
 	sort.SliceStable(
 		result,
 		func(i, j int) bool { return result[i].Name < result[j].Name },
 	)
+	return result
+}
+
+func floorDiv(x, positiveY int) int {
+	if positiveY <= 0 {
+		panic("positiveY must be positive")
+	}
+	result := x / positiveY
+	if x%positiveY < 0 {
+		result--
+	}
 	return result
 }

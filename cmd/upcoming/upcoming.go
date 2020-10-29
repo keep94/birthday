@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 
 	"github.com/keep94/birthday"
 )
@@ -28,16 +27,16 @@ func main() {
 		log.Fatal(err)
 	}
 	for _, milestone := range reminder.Milestones() {
-		ageStr := "?????"
+		ageStr := "? years"
 		if milestone.Age != -1 {
-			ageStr = strconv.Itoa(milestone.Age)
+			ageStr = fmt.Sprintf("%d %s", milestone.Age, milestone.Unit)
 		}
 		astricks := " "
 		if milestone.DaysAway == 0 {
 			astricks = "*"
 		}
 		fmt.Printf(
-			"%s %14s %5s %s\n",
+			"%s %14s %12s %s\n",
 			astricks,
 			birthday.ToStringWithWeekDay(milestone.Date),
 			ageStr,

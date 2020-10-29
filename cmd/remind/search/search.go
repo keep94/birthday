@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/keep94/birthday"
 	"github.com/keep94/birthday/cmd/remind/common"
@@ -45,8 +46,10 @@ var (
     <tr>
       <th>Name</th>
       <th>Birthday</th>
-      <th>In Years</th>
-      <th>In Days</th>
+      <th>Years</th>
+      <th>Months</th>
+      <th>Weeks</th>
+      <th>Days</th>
     </tr>
     {{with $top := .}}
     {{range .Results}}
@@ -54,6 +57,8 @@ var (
       <td>{{.Name}}</td>
       <td>{{$top.BirthdayStr .}}</td>
       <td>{{$top.InYearsStr .}}</td>
+      <td>{{$top.InMonthsStr .}}</td>
+      <td>{{$top.InWeeksStr .}}</td>
       <td>{{$top.InDaysStr .}}</td>
     </tr>
     {{end}}
@@ -73,37 +78,48 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	search := birthday.NewSearch(birthday.Today(), r.Form.Get("q"))
+	search := birthday.NewSearch(r.Form.Get("q"))
 	err := birthday.ReadFile(h.File, search)
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
 	}
 	http_util.WriteTemplate(w, kTemplate, &view{
-		Values:  http_util.Values{r.Form},
-		Results: search.Results(),
+		Values:      http_util.Values{r.Form},
+		Results:     search.Results(),
+		CurrentDate: birthday.Today(),
 	})
 }
 
 type view struct {
 	http_util.Values
-	Results []birthday.Result
+	Results     []birthday.Entry
+	CurrentDate time.Time
 }
 
-func (b *view) BirthdayStr(result birthday.Result) string {
-	return birthday.ToString(result.Birthday)
+func (b *view) BirthdayStr(entry *birthday.Entry) string {
+	return birthday.ToString(entry.Birthday)
 }
 
-func (v *view) InYearsStr(result birthday.Result) string {
-	if birthday.HasYear(result.Birthday) {
-		return strconv.Itoa(result.AgeInYears)
-	}
-	return "--"
+func (v *view) InYearsStr(entry *birthday.Entry) string {
+	return v.inUnitStr(entry, birthday.Years)
 }
 
-func (v *view) InDaysStr(result birthday.Result) string {
-	if birthday.HasYear(result.Birthday) {
-		return strconv.Itoa(result.AgeInDays)
+func (v *view) InMonthsStr(entry *birthday.Entry) string {
+	return v.inUnitStr(entry, birthday.Months)
+}
+
+func (v *view) InWeeksStr(entry *birthday.Entry) string {
+	return v.inUnitStr(entry, birthday.Weeks)
+}
+
+func (v *view) InDaysStr(entry *birthday.Entry) string {
+	return v.inUnitStr(entry, birthday.Days)
+}
+
+func (v *view) inUnitStr(entry *birthday.Entry, unit birthday.Unit) string {
+	if birthday.HasYear(entry.Birthday) {
+		return strconv.Itoa(unit.Diff(v.CurrentDate, entry.Birthday))
 	}
 	return "--"
 }

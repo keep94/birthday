@@ -76,21 +76,18 @@ type view struct {
 	Milestones []birthday.Milestone
 }
 
-func (b *view) DateStr(milestone birthday.Milestone) string {
+func (b *view) DateStr(milestone *birthday.Milestone) string {
 	return birthday.ToStringWithWeekDay(milestone.Date)
 }
 
-func (v *view) AgeStr(milestone birthday.Milestone) string {
+func (v *view) AgeStr(milestone *birthday.Milestone) string {
 	if milestone.Age < 0 {
-		return "? Years"
+		return "? years"
 	}
-	if milestone.AgeInDays {
-		return fmt.Sprintf("%d Days", milestone.Age)
-	}
-	return fmt.Sprintf("%d Years", milestone.Age)
+	return fmt.Sprintf("%d %s", milestone.Age, milestone.Unit)
 }
 
-func (v *view) Today(milestone birthday.Milestone) bool {
+func (v *view) Today(milestone *birthday.Milestone) bool {
 	return milestone.DaysAway == 0
 }
 
