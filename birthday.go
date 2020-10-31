@@ -94,11 +94,6 @@ func AsDays(t time.Time) int {
 	return days
 }
 
-// FromDays converts a day number to a time. Returned time is always in UTC.
-func FromDays(days int) time.Time {
-	return time.Unix(int64(days)*86400, 0).UTC()
-}
-
 // HasYear returns true if t has a year. That is t falls on or after
 // 1 Jan 0001
 func HasYear(t time.Time) bool {
@@ -121,7 +116,7 @@ func DiffInMonths(end, start time.Time) int {
 
 // DiffInWeeks returns the number of weeks between start and end rounded down
 func DiffInWeeks(end, start time.Time) int {
-	return floorDiv(AsDays(end)-AsDays(start), 7)
+	return floorDiv(DiffInDays(end, start), 7)
 }
 
 // DiffInDays returns the number of days between start and end rounded down
@@ -296,7 +291,7 @@ func (r *Reminder) addUnitMilestones(e *Entry, num int, unit Unit) {
 		nextAge = 0
 	}
 	nextMilestone := unit.Add(e.Birthday, nextAge)
-	daysAway := AsDays(nextMilestone) - AsDays(r.currentDate)
+	daysAway := DiffInDays(nextMilestone, r.currentDate)
 	for daysAway < r.daysAhead {
 		age := -1
 		if hasYear {
@@ -311,7 +306,7 @@ func (r *Reminder) addUnitMilestones(e *Entry, num int, unit Unit) {
 		})
 		nextAge += num
 		nextMilestone = unit.Add(e.Birthday, nextAge)
-		daysAway = AsDays(nextMilestone) - AsDays(r.currentDate)
+		daysAway = DiffInDays(nextMilestone, r.currentDate)
 	}
 }
 
