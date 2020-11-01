@@ -13,17 +13,6 @@ import (
 	"github.com/keep94/toolbox/str_util"
 )
 
-// SafeYMD works like YMD except it returns false if year, month, and day
-// aren't valid.
-func SafeYMD(year, month, day int) (t time.Time, ok bool) {
-	result := date_util.YMD(year, month, day)
-	y, m, d := result.Date()
-	if y != year || int(m) != month || d != day {
-		return
-	}
-	return result, true
-}
-
 // Today returns today's date at midnight in UTC.
 func Today() time.Time {
 	y, m, d := time.Now().Date()
@@ -68,30 +57,19 @@ func Parse(s string) (parsed time.Time, err error) {
 	var t time.Time
 	var ok bool
 	if len(parts) == 2 {
-		t, ok = SafeYMD(0, month, day)
+		t, ok = safeYMD(0, month, day)
 	} else {
 		var year int
 		year, err = strconv.Atoi(parts[2])
 		if err != nil {
 			return
 		}
-		t, ok = SafeYMD(year, month, day)
+		t, ok = safeYMD(year, month, day)
 	}
 	if !ok {
 		return time.Time{}, fmt.Errorf("Invalid date: %s", s)
 	}
 	return t, nil
-}
-
-// AsDays returns the day number for t. 0 is 1 Jan 1970; 1 is 2 Jan 1970 etc.
-func AsDays(t time.Time) int {
-	unix := t.Unix()
-	days := int(unix / 86400)
-	seconds := int(unix % 86400)
-	if seconds < 0 {
-		days--
-	}
-	return days
 }
 
 // HasYear returns true if t has a year. That is t falls on or after
@@ -121,7 +99,7 @@ func DiffInWeeks(end, start time.Time) int {
 
 // DiffInDays returns the number of days between start and end rounded down
 func DiffInDays(end, start time.Time) int {
-	return AsDays(end) - AsDays(start)
+	return asDays(end) - asDays(start)
 }
 
 // Entry represents a single entry in the birthday database
@@ -350,4 +328,23 @@ func floorDiv(x, positiveY int) int {
 		result--
 	}
 	return result
+}
+
+func safeYMD(year, month, day int) (t time.Time, ok bool) {
+	result := date_util.YMD(year, month, day)
+	y, m, d := result.Date()
+	if y != year || int(m) != month || d != day {
+		return
+	}
+	return result, true
+}
+
+func asDays(t time.Time) int {
+	unix := t.Unix()
+	days := int(unix / 86400)
+	seconds := int(unix % 86400)
+	if seconds < 0 {
+		days--
+	}
+	return days
 }

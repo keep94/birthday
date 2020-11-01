@@ -11,63 +11,59 @@ import (
 
 var yearsAndThousandDays = birthday.Types{Years: true, ThousandDays: true}
 
-func TestAsDays(t *testing.T) {
-	assert := asserts.New(t)
-	b := date_util.YMD(1970, 1, 1)
-	assert.Equal(0, birthday.AsDays(b))
-	b = date_util.YMD(1930, 1, 1)
-	assert.Equal(-14610, birthday.AsDays(b))
-}
-
 func TestDiffInDaysAndWeeks(t *testing.T) {
 	assert := asserts.New(t)
 	start := date_util.YMD(2020, 2, 29)
 	end := date_util.YMD(2020, 3, 1)
-	assert.Equal(1, birthday.Days.Diff(end, start))
-	assert.Equal(0, birthday.Weeks.Diff(end, start))
+	assert.Equal(1, birthday.DiffInDays(end, start))
+	assert.Equal(0, birthday.DiffInWeeks(end, start))
 	start = date_util.YMD(2001, 9, 17)
 	end = date_util.YMD(2018, 8, 5)
-	assert.Equal(6166, birthday.Days.Diff(end, start))
-	assert.Equal(880, birthday.Weeks.Diff(end, start))
+	assert.Equal(6166, birthday.DiffInDays(end, start))
+	assert.Equal(880, birthday.DiffInWeeks(end, start))
+	assert.Equal(-6166, birthday.DiffInDays(start, end))
+	assert.Equal(-881, birthday.DiffInWeeks(start, end))
 	assert.Equal(-6166, birthday.Days.Diff(start, end))
 	assert.Equal(-881, birthday.Weeks.Diff(start, end))
-}
-
-func TestDiffInYears(t *testing.T) {
-	assert := asserts.New(t)
-	end := date_util.YMD(1951, 2, 15)
-	assert.Equal(0, birthday.Years.Diff(end, date_util.YMD(1951, 2, 15)))
-	assert.Equal(-1, birthday.Years.Diff(end, date_util.YMD(1951, 2, 16)))
-	assert.Equal(-1, birthday.Years.Diff(end, date_util.YMD(1951, 3, 1)))
-	assert.Equal(-1, birthday.Years.Diff(end, date_util.YMD(1952, 2, 15)))
-	assert.Equal(-2, birthday.Years.Diff(end, date_util.YMD(1952, 2, 16)))
-	assert.Equal(0, birthday.Years.Diff(end, date_util.YMD(1951, 2, 14)))
-	assert.Equal(0, birthday.Years.Diff(end, date_util.YMD(1951, 1, 31)))
-	assert.Equal(0, birthday.Years.Diff(end, date_util.YMD(1950, 2, 16)))
-	assert.Equal(1, birthday.Years.Diff(end, date_util.YMD(1950, 2, 15)))
-	assert.Equal(3, birthday.DiffInYears(end, date_util.YMD(1948, 2, 15)))
 }
 
 func TestDiffInMonths(t *testing.T) {
 	assert := asserts.New(t)
 	start := date_util.YMD(2019, 12, 31)
 	end := date_util.YMD(2021, 3, 3)
-	assert.Equal(14, birthday.Months.Diff(end, start))
+	assert.Equal(14, birthday.DiffInMonths(end, start))
 	end = date_util.YMD(2021, 3, 2)
-	assert.Equal(13, birthday.Months.Diff(end, start))
+	assert.Equal(13, birthday.DiffInMonths(end, start))
 	end = date_util.YMD(2019, 12, 31)
-	assert.Equal(0, birthday.Months.Diff(end, start))
+	assert.Equal(0, birthday.DiffInMonths(end, start))
 	end = date_util.YMD(2019, 12, 30)
-	assert.Equal(-1, birthday.Months.Diff(end, start))
+	assert.Equal(-1, birthday.DiffInMonths(end, start))
 	end = date_util.YMD(1983, 5, 26)
 	start = date_util.YMD(1971, 11, 26)
-	assert.Equal(138, birthday.Months.Diff(end, start))
+	assert.Equal(138, birthday.DiffInMonths(end, start))
 	end = date_util.YMD(1971, 11, 26)
 	start = date_util.YMD(1983, 5, 26)
-	assert.Equal(-138, birthday.Months.Diff(end, start))
+	assert.Equal(-138, birthday.DiffInMonths(end, start))
 	end = date_util.YMD(1971, 11, 25)
 	start = date_util.YMD(1983, 5, 26)
+	assert.Equal(-139, birthday.DiffInMonths(end, start))
 	assert.Equal(-139, birthday.Months.Diff(end, start))
+}
+
+func TestDiffInYears(t *testing.T) {
+	assert := asserts.New(t)
+	end := date_util.YMD(1951, 2, 15)
+	assert.Equal(0, birthday.DiffInYears(end, date_util.YMD(1951, 2, 15)))
+	assert.Equal(-1, birthday.DiffInYears(end, date_util.YMD(1951, 2, 16)))
+	assert.Equal(-1, birthday.DiffInYears(end, date_util.YMD(1951, 3, 1)))
+	assert.Equal(-1, birthday.DiffInYears(end, date_util.YMD(1952, 2, 15)))
+	assert.Equal(-2, birthday.DiffInYears(end, date_util.YMD(1952, 2, 16)))
+	assert.Equal(0, birthday.DiffInYears(end, date_util.YMD(1951, 2, 14)))
+	assert.Equal(0, birthday.DiffInYears(end, date_util.YMD(1951, 1, 31)))
+	assert.Equal(0, birthday.DiffInYears(end, date_util.YMD(1950, 2, 16)))
+	assert.Equal(1, birthday.DiffInYears(end, date_util.YMD(1950, 2, 15)))
+	assert.Equal(3, birthday.DiffInYears(end, date_util.YMD(1948, 2, 15)))
+	assert.Equal(3, birthday.Years.Diff(end, date_util.YMD(1948, 2, 15)))
 }
 
 func TestAdd(t *testing.T) {
