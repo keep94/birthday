@@ -185,6 +185,14 @@ type Milestone struct {
 	Unit Unit
 }
 
+// AgeString returns the age as a string e.g "57 years"
+func (m *Milestone) AgeString() string {
+	if m.Age < 0 {
+		return fmt.Sprintf("? %s", m.Unit)
+	}
+	return fmt.Sprintf("%d %s", m.Age, m.Unit)
+}
+
 // Types contains what milestone types a Reminder instance will give
 type Types struct {
 	Years         bool

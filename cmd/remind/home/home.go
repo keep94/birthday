@@ -43,7 +43,7 @@ var (
     <tr>
       <td {{if $top.Today .}}class="today"{{end}}>{{$top.DateStr .}}</td>
       <td {{if $top.Today .}}class="today"{{end}}>{{.Name}}</td>
-      <td {{if $top.Today .}}class="today"{{end}}>{{$top.AgeStr .}}</td>
+      <td {{if $top.Today .}}class="today"{{end}}>{{.AgeString}}</td>
     </tr>
     {{end}}
     {{end}}
@@ -78,13 +78,6 @@ type view struct {
 
 func (b *view) DateStr(milestone *birthday.Milestone) string {
 	return birthday.ToStringWithWeekDay(milestone.Date)
-}
-
-func (v *view) AgeStr(milestone *birthday.Milestone) string {
-	if milestone.Age < 0 {
-		return "? years"
-	}
-	return fmt.Sprintf("%d %s", milestone.Age, milestone.Unit)
 }
 
 func (v *view) Today(milestone *birthday.Milestone) bool {

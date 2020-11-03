@@ -27,10 +27,6 @@ func main() {
 		log.Fatal(err)
 	}
 	for _, milestone := range reminder.Milestones() {
-		ageStr := "? years"
-		if milestone.Age != -1 {
-			ageStr = fmt.Sprintf("%d %s", milestone.Age, milestone.Unit)
-		}
 		astricks := " "
 		if milestone.DaysAway == 0 {
 			astricks = "*"
@@ -39,7 +35,7 @@ func main() {
 			"%s %14s %12s %s\n",
 			astricks,
 			birthday.ToStringWithWeekDay(milestone.Date),
-			ageStr,
+			milestone.AgeString(),
 			milestone.Name)
 	}
 }
