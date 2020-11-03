@@ -127,6 +127,22 @@ func TestParse(t *testing.T) {
 	assert.Error(err)
 }
 
+func TestMilestoneAgeString(t *testing.T) {
+	assert := asserts.New(t)
+	milestone := birthday.Milestone{Age: -1, Unit: birthday.Years}
+	assert.Equal("? years", milestone.AgeString())
+	milestone = birthday.Milestone{Age: 47, Unit: birthday.Years}
+	assert.Equal("47 years", milestone.AgeString())
+	milestone = birthday.Milestone{Age: 5, Unit: birthday.Months}
+	assert.Equal("5 months", milestone.AgeString())
+	milestone = birthday.Milestone{Age: 3, Unit: birthday.Weeks}
+	assert.Equal("3 weeks", milestone.AgeString())
+	milestone = birthday.Milestone{Age: 0, Unit: birthday.Days}
+	assert.Equal("0 days", milestone.AgeString())
+	milestone = birthday.Milestone{Age: -2, Unit: birthday.Days}
+	assert.Equal("? days", milestone.AgeString())
+}
+
 func TestMilestonesBirthdayNextYear(t *testing.T) {
 	assert := asserts.New(t)
 	b := date_util.YMD(0, 1, 26)
