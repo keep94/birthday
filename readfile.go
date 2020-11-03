@@ -3,6 +3,7 @@ package birthday
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
@@ -19,7 +20,12 @@ func ReadFile(filename string, consumer Consumer) error {
 		return err
 	}
 	defer file.Close()
-	scanner := bufio.NewScanner(file)
+	return Read(file, consumer)
+}
+
+// Read reads a birthday file letting consumer consume each entry.
+func Read(r io.Reader, consumer Consumer) error {
+	scanner := bufio.NewScanner(r)
 	lineNo := 0
 	var entry Entry
 	for scanner.Scan() {
@@ -30,8 +36,8 @@ func ReadFile(filename string, consumer Consumer) error {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		parts := strings.SplitN(line, "\t", 2)
-		if len(parts) != 2 {
+		parts := strings.Split(line, "\t")
+		if len(parts) < 2 {
 			return fmt.Errorf("Line %d malformatted", lineNo)
 		}
 		entry.Name = strings.TrimSpace(parts[0])
