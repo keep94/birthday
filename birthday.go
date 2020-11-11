@@ -13,6 +13,15 @@ import (
 	"github.com/keep94/toolbox/str_util"
 )
 
+var yearly = Period{Count: 1, Unit: Years}
+
+var defaultPeriods = []Period{
+	{Count: 1, Unit: Years},
+	{Count: 100, Unit: Months},
+	{Count: 100, Unit: Weeks},
+	{Count: 1000, Unit: Days},
+}
+
 // Today returns today's date at midnight in UTC.
 func Today() time.Time {
 	y, m, d := time.Now().Date()
@@ -118,6 +127,11 @@ const (
 	Days
 )
 
+// Valid returns true if this unit is valid.
+func (u Unit) Valid() bool {
+	return u >= Years && u <= Days
+}
+
 func (u Unit) String() string {
 	switch u {
 	case Years:
@@ -165,6 +179,28 @@ func (u Unit) Add(start time.Time, x int) time.Time {
 	}
 }
 
+// Period represents a period of time
+type Period struct {
+	Count int
+	Unit  Unit
+}
+
+// Valid returns true if p.Count > 0 and p.Unit is valid.
+func (p Period) Valid() bool {
+	return p.Count > 0 && p.Unit.Valid()
+}
+
+// Diff returns the number of this period between end and start rounded down.
+// Diff panics if this period is not valid.
+func (p Period) Diff(end, start time.Time) int {
+	return floorDiv(p.Unit.Diff(end, start), p.Count)
+}
+
+// Add adds count of this period to start and returns the result.
+func (p Period) Add(start time.Time, count int) time.Time {
+	return p.Unit.Add(start, p.Count*count)
+}
+
 // Milestone represents a milestone day.
 type Milestone struct {
 
@@ -193,66 +229,49 @@ func (m *Milestone) AgeString() string {
 	return fmt.Sprintf("%d %s", m.Age, m.Unit)
 }
 
-// Types contains what milestone types a Reminder instance will give
-type Types struct {
-	Years         bool
-	HundredMonths bool
-	HundredWeeks  bool
-	ThousandDays  bool
-}
-
-// Flip returns the opposite of this instance.
-func (t Types) Flip() Types {
-	return Types{
-		Years:         !t.Years,
-		HundredMonths: !t.HundredMonths,
-		HundredWeeks:  !t.HundredWeeks,
-		ThousandDays:  !t.ThousandDays,
-	}
-}
-
 // Reminder reminds of upcoming milestones for people.
 // Caller adds people with the Consume() method then the caller calls
 // Milestones() to see all the people with upcoming milestones.
 type Reminder struct {
 	currentDate time.Time
 	daysAhead   int
-	types       Types
+	periods     []Period
 	milestones  []Milestone
 }
 
 // NewReminder creates a new Reminder instance. currentDate is the current
 // date. daysAhead controls how many days in the future milestones can be.
+// By default the new instance reminds of yearly birthdays, each 100 months,
+// each 100 weeks, and each 1000 days. Caller can change this by calling
+// SetPeriods.
 func NewReminder(currentDate time.Time, daysAhead int) *Reminder {
 	result := &Reminder{
 		currentDate: currentDate,
 		daysAhead:   daysAhead,
-		types:       Types{}.Flip()}
+		periods:     defaultPeriods}
 	return result
 }
 
-// SetTypes sets the milestone types this instance will give. The default
-// is all types.
-func (r *Reminder) SetTypes(types Types) {
-	r.types = types
+// SetPeriods sets the periods for which this reminder will remind overriding
+// previously set periods. SetPeriods panics if any of the periods passed to
+// it are invalid.
+func (r *Reminder) SetPeriods(periods ...Period) {
+	for _, p := range periods {
+		if !p.Valid() {
+			panic("invalid period")
+		}
+	}
+	r.periods = make([]Period, len(periods))
+	copy(r.periods, periods)
 }
 
 // Consume consumes an entry.
 func (r *Reminder) Consume(e *Entry) {
-	if r.types.Years {
-		r.addUnitMilestones(e, 1, Years)
-	}
-	if !HasYear(e.Birthday) {
-		return
-	}
-	if r.types.HundredMonths {
-		r.addUnitMilestones(e, 100, Months)
-	}
-	if r.types.HundredWeeks {
-		r.addUnitMilestones(e, 100, Weeks)
-	}
-	if r.types.ThousandDays {
-		r.addUnitMilestones(e, 1000, Days)
+	hasYear := HasYear(e.Birthday)
+	for _, p := range r.periods {
+		if hasYear || p == yearly {
+			r.addPeriodMilestones(e, p)
+		}
 	}
 }
 
@@ -269,29 +288,29 @@ func (r *Reminder) Milestones() []Milestone {
 	return result
 }
 
-func (r *Reminder) addUnitMilestones(e *Entry, num int, unit Unit) {
+func (r *Reminder) addPeriodMilestones(e *Entry, period Period) {
 	hasYear := HasYear(e.Birthday)
 	yesterday := r.currentDate.AddDate(0, 0, -1)
-	nextAge := floorDiv(unit.Diff(yesterday, e.Birthday), num)*num + num
-	if nextAge < 0 {
-		nextAge = 0
+	count := period.Diff(yesterday, e.Birthday) + 1
+	if count < 0 {
+		count = 0
 	}
-	nextMilestone := unit.Add(e.Birthday, nextAge)
+	nextMilestone := period.Add(e.Birthday, count)
 	daysAway := DiffInDays(nextMilestone, r.currentDate)
 	for daysAway < r.daysAhead {
 		age := -1
 		if hasYear {
-			age = nextAge
+			age = period.Count * count
 		}
 		r.milestones = append(r.milestones, Milestone{
 			Name:     e.Name,
 			Date:     nextMilestone,
 			DaysAway: daysAway,
 			Age:      age,
-			Unit:     unit,
+			Unit:     period.Unit,
 		})
-		nextAge += num
-		nextMilestone = unit.Add(e.Birthday, nextAge)
+		count++
+		nextMilestone = period.Add(e.Birthday, count)
 		daysAway = DiffInDays(nextMilestone, r.currentDate)
 	}
 }

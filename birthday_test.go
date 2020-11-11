@@ -9,7 +9,10 @@ import (
 	asserts "github.com/stretchr/testify/assert"
 )
 
-var yearsAndThousandDays = birthday.Types{Years: true, ThousandDays: true}
+var years = birthday.Period{Count: 1, Unit: birthday.Years}
+var hundredMonths = birthday.Period{Count: 100, Unit: birthday.Months}
+var hundredWeeks = birthday.Period{Count: 100, Unit: birthday.Weeks}
+var thousandDays = birthday.Period{Count: 1000, Unit: birthday.Days}
 
 func TestDiffInDaysAndWeeks(t *testing.T) {
 	assert := asserts.New(t)
@@ -321,7 +324,7 @@ func TestRemindNoYears(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2023, 1, 20)
 	r := birthday.NewReminder(currentDate, 500)
-	r.SetTypes(birthday.Types{ThousandDays: true})
+	r.SetPeriods(thousandDays)
 	e := birthday.Entry{
 		Name:     "Mark",
 		Birthday: date_util.YMD(2023, 1, 20),
@@ -420,7 +423,7 @@ func TestRemindWithWeeks(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2017, 12, 28)
 	r := birthday.NewReminder(currentDate, 701)
-	r.SetTypes(birthday.Types{HundredWeeks: true})
+	r.SetPeriods(hundredWeeks)
 	e := birthday.Entry{
 		Name:     "Mark",
 		Birthday: date_util.YMD(1968, 2, 29),
@@ -449,7 +452,7 @@ func TestRemind(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2023, 1, 20)
 	r := birthday.NewReminder(currentDate, 500)
-	r.SetTypes(yearsAndThousandDays)
+	r.SetPeriods(years, thousandDays)
 	e := birthday.Entry{
 		Name:     "Mark",
 		Birthday: date_util.YMD(2023, 1, 20),
@@ -502,7 +505,7 @@ func TestRemindAgain(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2023, 1, 20)
 	r := birthday.NewReminder(currentDate, 406)
-	r.SetTypes(yearsAndThousandDays)
+	r.SetPeriods(years, thousandDays)
 	e := birthday.Entry{Name: "Matt", Birthday: date_util.YMD(1952, 2, 29)}
 	r.Consume(&e)
 	milestones := r.Milestones()
@@ -584,7 +587,7 @@ func TestFilterSome(t *testing.T) {
 func getMilestones(
 	currentDate, b time.Time, daysAhead int) []birthday.Milestone {
 	r := birthday.NewReminder(currentDate, daysAhead)
-	r.SetTypes(yearsAndThousandDays)
+	r.SetPeriods(years, thousandDays)
 	e := birthday.Entry{Birthday: b}
 	r.Consume(&e)
 	return r.Milestones()
