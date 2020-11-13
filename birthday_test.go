@@ -320,6 +320,13 @@ func TestMilestonesYearAfter(t *testing.T) {
 		milestones)
 }
 
+func TestRemindPanic(t *testing.T) {
+	assert := asserts.New(t)
+	currentDate := date_util.YMD(2023, 1, 20)
+	r := birthday.NewReminder(currentDate, 500)
+	assert.Panics(func() { r.SetPeriods(birthday.Period{}) })
+}
+
 func TestRemindNoYears(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2023, 1, 20)
