@@ -102,24 +102,26 @@ func (b *view) BirthdayStr(entry *birthday.Entry) string {
 }
 
 func (v *view) InYearsStr(entry *birthday.Entry) string {
-	return v.inUnitStr(entry, birthday.Years)
+	return v.inUnitStr(entry, birthday.DiffInYears)
 }
 
 func (v *view) InMonthsStr(entry *birthday.Entry) string {
-	return v.inUnitStr(entry, birthday.Months)
+	return v.inUnitStr(entry, birthday.DiffInMonths)
 }
 
 func (v *view) InWeeksStr(entry *birthday.Entry) string {
-	return v.inUnitStr(entry, birthday.Weeks)
+	return v.inUnitStr(entry, birthday.DiffInWeeks)
 }
 
 func (v *view) InDaysStr(entry *birthday.Entry) string {
-	return v.inUnitStr(entry, birthday.Days)
+	return v.inUnitStr(entry, birthday.DiffInDays)
 }
 
-func (v *view) inUnitStr(entry *birthday.Entry, unit birthday.Unit) string {
+func (v *view) inUnitStr(
+	entry *birthday.Entry,
+	diffFunc func(end, start time.Time) int) string {
 	if birthday.HasYear(entry.Birthday) {
-		return strconv.Itoa(unit.Diff(v.CurrentDate, entry.Birthday))
+		return strconv.Itoa(diffFunc(v.CurrentDate, entry.Birthday))
 	}
 	return "--"
 }

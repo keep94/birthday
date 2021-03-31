@@ -32,7 +32,7 @@ func main() {
 			astricks = "*"
 		}
 		fmt.Printf(
-			"%s %14s %12s %s\n",
+			"%s %14s %20s %s\n",
 			astricks,
 			birthday.ToStringWithWeekDay(milestone.Date),
 			milestone.AgeString(),

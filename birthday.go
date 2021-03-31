@@ -13,13 +13,18 @@ import (
 	"github.com/keep94/toolbox/str_util"
 )
 
-var yearly = Period{Count: 1, Unit: Years}
+const (
+	kInvalidPeriod = "invalid period"
+)
+
+var yearly = Period{Years: 1}
 
 var defaultPeriods = []Period{
-	{Count: 1, Unit: Years},
-	{Count: 100, Unit: Months},
-	{Count: 100, Unit: Weeks},
-	{Count: 1000, Unit: Days},
+	{Years: 1},
+	{Months: 100},
+	{Months: 6, Normalize: true},
+	{Weeks: 100},
+	{Days: 1000},
 }
 
 // Today returns today's date at midnight in UTC.
@@ -117,88 +122,132 @@ type Entry struct {
 	Birthday time.Time
 }
 
-// Unit is unit of time.
-type Unit int
-
-const (
-	Years Unit = iota
-	Months
-	Weeks
-	Days
-)
-
-// Valid returns true if this unit is valid.
-func (u Unit) Valid() bool {
-	return u >= Years && u <= Days
-}
-
-func (u Unit) String() string {
-	switch u {
-	case Years:
-		return "years"
-	case Months:
-		return "months"
-	case Weeks:
-		return "weeks"
-	case Days:
-		return "days"
-	default:
-		return "unknown"
-	}
-}
-
-// Diff returns the number of this unit between start and end rounded down.
-func (u Unit) Diff(end, start time.Time) int {
-	switch u {
-	case Years:
-		return DiffInYears(end, start)
-	case Months:
-		return DiffInMonths(end, start)
-	case Weeks:
-		return DiffInWeeks(end, start)
-	case Days:
-		return DiffInDays(end, start)
-	default:
-		panic("unknown unit")
-	}
-}
-
-// Add returns start plus x of this unit.
-func (u Unit) Add(start time.Time, x int) time.Time {
-	switch u {
-	case Years:
-		return start.AddDate(x, 0, 0)
-	case Months:
-		return start.AddDate(0, x, 0)
-	case Weeks:
-		return start.AddDate(0, 0, 7*x)
-	case Days:
-		return start.AddDate(0, 0, x)
-	default:
-		panic("unknown unit")
-	}
-}
-
 // Period represents a period of time
 type Period struct {
-	Count int
-	Unit  Unit
+	Years  int
+	Months int
+	Weeks  int
+	Days   int
+
+	// If true, Multiply normalizes.
+	Normalize bool
 }
 
-// Valid returns true if p.Count > 0 and p.Unit is valid.
+// Valid returns true if p represents a net positive period.
 func (p Period) Valid() bool {
-	return p.Count > 0 && p.Unit.Valid()
+	return p.approxDays() > 0.0
+}
+
+// Less creates a total ordering of periods.
+// !p.Less(q) && !q.Less(p) implies p == q. The ordering has nothing to
+// do with the length of the period.
+func (p Period) Less(other Period) bool {
+	if !p.Normalize && other.Normalize {
+		return true
+	}
+	if p.Normalize && !other.Normalize {
+		return false
+	}
+	if p.Days < other.Days {
+		return true
+	}
+	if p.Days > other.Days {
+		return false
+	}
+	if p.Weeks < other.Weeks {
+		return true
+	}
+	if p.Weeks > other.Weeks {
+		return false
+	}
+	if p.Months < other.Months {
+		return true
+	}
+	if p.Months > other.Months {
+		return false
+	}
+	return p.Years < other.Years
 }
 
 // Diff returns the number of this period between end and start rounded down.
 // Diff panics if this period is not valid.
 func (p Period) Diff(end, start time.Time) int {
-	return floorDiv(p.Unit.Diff(end, start), p.Count)
+	diff := float64(DiffInDays(end, start))
+	approxDays := p.approxDays()
+	if approxDays <= 0.0 {
+		panic(kInvalidPeriod)
+	}
+	result := int(diff / approxDays)
+	for !p.Add(start, result).After(end) {
+		result++
+	}
+	for p.Add(start, result).After(end) {
+		result--
+	}
+	return result
 }
 
 // Add adds count of this period to start and returns the result.
 func (p Period) Add(start time.Time, count int) time.Time {
-	return p.Unit.Add(start, p.Count*count)
+	return start.AddDate(
+		count*p.Years, count*p.Months, count*(p.Weeks*7+p.Days))
+}
+
+func (p Period) String() string {
+	var parts []string
+	if p.Years != 0 {
+		parts = append(parts, fmt.Sprintf("%d years", p.Years))
+	}
+	if p.Months != 0 {
+		parts = append(parts, fmt.Sprintf("%d months", p.Months))
+	}
+	if p.Weeks != 0 {
+		parts = append(parts, fmt.Sprintf("%d weeks", p.Weeks))
+	}
+	if p.Days != 0 {
+		parts = append(parts, fmt.Sprintf("%d days", p.Days))
+	}
+	if len(parts) == 0 {
+		return "0 days"
+	}
+	return strings.Join(parts, " ")
+}
+
+// Multiply returns p * count. If p.Normalize is true, the returned period is
+// normalized. The Normalize field of returned Period is set to false.
+func (p Period) Multiply(count int) Period {
+	var result Period
+	result.Years = p.Years * count
+	result.Months = p.Months * count
+	result.Weeks = p.Weeks * count
+	result.Days = p.Days * count
+	if p.Normalize {
+		result.normalize()
+	}
+	return result
+}
+
+func (p Period) approxDays() float64 {
+	years := float64(p.Years) + float64(p.Months)/12.0
+	days := 7.0*float64(p.Weeks) + float64(p.Days)
+	return years*365.2425 + days
+}
+
+func (p *Period) normalize() {
+	p.normalizeMonths()
+	p.normalizeDays()
+}
+
+func (p *Period) normalizeMonths() {
+	monthsOver12 := floorDiv(p.Months, 12)
+	p.Years += monthsOver12
+	p.Months -= 12 * monthsOver12
+}
+
+func (p *Period) normalizeDays() {
+	daysOver7 := floorDiv(p.Days, 7)
+	p.Weeks += daysOver7
+	p.Days -= 7 * daysOver7
 }
 
 // Milestone represents a milestone day.
@@ -214,19 +263,42 @@ type Milestone struct {
 	DaysAway int
 
 	// The age of the person on this mileestone day.
-	// -1 if age of person is unknown.
-	Age int
+	Age Period
 
-	// The age units of the person. e.g Years, Weeks, Days, etc.
-	Unit Unit
+	// If true, age is unknown
+	AgeUnknown bool
+}
+
+// Less orders milestones. Milestones are ordered first by DaysAway then
+// by Name then by whether or not the age is unknown and finally by Age.
+func (m *Milestone) Less(other *Milestone) bool {
+	if m.DaysAway < other.DaysAway {
+		return true
+	}
+	if m.DaysAway > other.DaysAway {
+		return false
+	}
+	if m.Name < other.Name {
+		return true
+	}
+	if m.Name > other.Name {
+		return false
+	}
+	if !m.AgeUnknown && other.AgeUnknown {
+		return true
+	}
+	if m.AgeUnknown && !other.AgeUnknown {
+		return false
+	}
+	return m.Age.Less(other.Age)
 }
 
 // AgeString returns the age as a string e.g "57 years"
 func (m *Milestone) AgeString() string {
-	if m.Age < 0 {
-		return fmt.Sprintf("? %s", m.Unit)
+	if m.AgeUnknown {
+		return "? years"
 	}
-	return fmt.Sprintf("%d %s", m.Age, m.Unit)
+	return m.Age.String()
 }
 
 // Reminder reminds of upcoming milestones for people.
@@ -242,8 +314,8 @@ type Reminder struct {
 // NewReminder creates a new Reminder instance. currentDate is the current
 // date. daysAhead controls how many days in the future milestones can be.
 // By default the new instance reminds of yearly birthdays, each 100 months,
-// each 100 weeks, and each 1000 days. Caller can change this by calling
-// SetPeriods.
+// each 100 weeks, each 1000 days, and each 6 months. Caller can change this
+// by calling SetPeriods.
 func NewReminder(currentDate time.Time, daysAhead int) *Reminder {
 	result := &Reminder{
 		currentDate: currentDate,
@@ -258,7 +330,7 @@ func NewReminder(currentDate time.Time, daysAhead int) *Reminder {
 func (r *Reminder) SetPeriods(periods ...Period) {
 	for _, p := range periods {
 		if !p.Valid() {
-			panic("invalid period")
+			panic(kInvalidPeriod)
 		}
 	}
 	r.periods = make([]Period, len(periods))
@@ -281,11 +353,25 @@ func (r *Reminder) Consume(e *Entry) {
 func (r *Reminder) Milestones() []Milestone {
 	result := make([]Milestone, len(r.milestones))
 	copy(result, r.milestones)
-	sort.SliceStable(
+	sort.Slice(
 		result,
-		func(i, j int) bool { return result[i].DaysAway < result[j].DaysAway },
-	)
+		func(i, j int) bool { return result[i].Less(&result[j]) })
+	removeDuplicateMilestones(&result)
 	return result
+}
+
+func removeDuplicateMilestones(milestones *[]Milestone) {
+	if len(*milestones) == 0 {
+		return
+	}
+	idx := 1
+	for i := 1; i < len(*milestones); i++ {
+		if (*milestones)[idx-1].Less(&(*milestones)[i]) {
+			(*milestones)[idx] = (*milestones)[i]
+			idx++
+		}
+	}
+	*milestones = (*milestones)[:idx]
 }
 
 func (r *Reminder) addPeriodMilestones(e *Entry, period Period) {
@@ -298,16 +384,16 @@ func (r *Reminder) addPeriodMilestones(e *Entry, period Period) {
 	nextMilestone := period.Add(e.Birthday, count)
 	daysAway := DiffInDays(nextMilestone, r.currentDate)
 	for daysAway < r.daysAhead {
-		age := -1
+		var age Period
 		if hasYear {
-			age = period.Count * count
+			age = period.Multiply(count)
 		}
 		r.milestones = append(r.milestones, Milestone{
-			Name:     e.Name,
-			Date:     nextMilestone,
-			DaysAway: daysAway,
-			Age:      age,
-			Unit:     period.Unit,
+			Name:       e.Name,
+			Date:       nextMilestone,
+			DaysAway:   daysAway,
+			Age:        age,
+			AgeUnknown: !hasYear,
 		})
 		count++
 		nextMilestone = period.Add(e.Birthday, count)
