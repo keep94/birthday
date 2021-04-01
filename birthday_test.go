@@ -147,10 +147,7 @@ func TestMilestoneLess(t *testing.T) {
 func TestPeriodLess(t *testing.T) {
 	assert := asserts.New(t)
 	var lhs birthday.Period
-	rhs := birthday.Period{Normalize: true}
-	assert.True(lhs.Less(rhs))
-	assert.False(rhs.Less(lhs))
-	rhs = birthday.Period{Days: 17}
+	rhs := birthday.Period{Days: 17}
 	assert.True(lhs.Less(rhs))
 	assert.False(rhs.Less(lhs))
 	rhs = birthday.Period{Weeks: 17}
@@ -164,6 +161,14 @@ func TestDiffPanics(t *testing.T) {
 	assert.Panics(func() {
 		p.Diff(date_util.YMD(2020, 10, 15), date_util.YMD(2020, 10, 14))
 	})
+}
+
+func TestPeriodMultiply(t *testing.T) {
+	assert := asserts.New(t)
+	p := birthday.Period{Days: 5, Normalize: true}
+	assert.Equal(birthday.Period{Weeks: 4, Days: 2}, p.Multiply(6))
+	p = birthday.Period{Days: 5}
+	assert.Equal(birthday.Period{Days: 30}, p.Multiply(6))
 }
 
 func TestMilestonesBirthdayNextYear(t *testing.T) {

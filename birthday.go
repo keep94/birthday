@@ -138,16 +138,9 @@ func (p Period) Valid() bool {
 	return p.approxDays() > 0.0
 }
 
-// Less creates a total ordering of periods.
-// !p.Less(q) && !q.Less(p) implies p == q. The ordering has nothing to
-// do with the length of the period.
+// Less orders Periods. Less orders first by Days, then by Weeks,
+// then by Months, and finally by Years.
 func (p Period) Less(other Period) bool {
-	if !p.Normalize && other.Normalize {
-		return true
-	}
-	if p.Normalize && !other.Normalize {
-		return false
-	}
 	if p.Days < other.Days {
 		return true
 	}
@@ -269,8 +262,8 @@ type Milestone struct {
 	AgeUnknown bool
 }
 
-// Less orders milestones. Milestones are ordered first by DaysAway then
-// by Name then by whether or not the age is unknown and finally by Age.
+// Less orders Milestones. Less orders first by DaysAway then by Name
+// then by AgeUnknown and finally by Age.
 func (m *Milestone) Less(other *Milestone) bool {
 	if m.DaysAway < other.DaysAway {
 		return true
