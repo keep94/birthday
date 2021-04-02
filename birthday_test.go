@@ -124,16 +124,6 @@ func TestMilestoneAgeString(t *testing.T) {
 	assert.Equal("? years", milestone.AgeString())
 	milestone = birthday.Milestone{Age: birthday.Period{Years: 47}}
 	assert.Equal("47 years", milestone.AgeString())
-	milestone = birthday.Milestone{Age: birthday.Period{Months: 5}}
-	assert.Equal("5 months", milestone.AgeString())
-	milestone = birthday.Milestone{Age: birthday.Period{Weeks: 3}}
-	assert.Equal("3 weeks", milestone.AgeString())
-	milestone = birthday.Milestone{Age: birthday.Period{Days: 1}}
-	assert.Equal("1 days", milestone.AgeString())
-	milestone = birthday.Milestone{}
-	assert.Equal("0 days", milestone.AgeString())
-	milestone = birthday.Milestone{Age: birthday.Period{Years: 12, Months: 6}}
-	assert.Equal("12 years 6 months", milestone.AgeString())
 }
 
 func TestMilestoneLess(t *testing.T) {
@@ -142,6 +132,47 @@ func TestMilestoneLess(t *testing.T) {
 	rhs := birthday.Milestone{AgeUnknown: true}
 	assert.True(lhs.Less(&rhs))
 	assert.False(rhs.Less(&lhs))
+}
+
+func TestPeriodAdd(t *testing.T) {
+	assert := asserts.New(t)
+	p := birthday.Period{Years: 2, Months: 1, Weeks: 2, Days: -11}
+	assert.Equal(
+		date_util.YMD(2020, 12, 17),
+		p.Add(date_util.YMD(2010, 7, 2), 5))
+}
+
+func TestPeriodValid(t *testing.T) {
+	assert := asserts.New(t)
+	var p birthday.Period
+	assert.False(p.Valid())
+	p = birthday.Period{Years: 1}
+	assert.True(p.Valid())
+}
+
+func TestPeriodDiff(t *testing.T) {
+	assert := asserts.New(t)
+	p := birthday.Period{Weeks: 1, Days: 1}
+	assert.Equal(
+		-92, p.Diff(date_util.YMD(2019, 9, 2), date_util.YMD(2021, 9, 7)))
+	assert.Equal(
+		-93, p.Diff(date_util.YMD(2019, 9, 2), date_util.YMD(2021, 9, 8)))
+}
+
+func TestPeriodString(t *testing.T) {
+	assert := asserts.New(t)
+	p := birthday.Period{Years: 52}
+	assert.Equal("52 years", p.String())
+	p = birthday.Period{Months: 5}
+	assert.Equal("5 months", p.String())
+	p = birthday.Period{Weeks: 3}
+	assert.Equal("3 weeks", p.String())
+	p = birthday.Period{Days: 1}
+	assert.Equal("1 days", p.String())
+	p = birthday.Period{}
+	assert.Equal("0 days", p.String())
+	p = birthday.Period{Years: 12, Months: 6}
+	assert.Equal("12 years 6 months", p.String())
 }
 
 func TestPeriodLess(t *testing.T) {
