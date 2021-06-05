@@ -39,7 +39,16 @@ var (
 <body>
   <h1>Birthdays</h1>
   <form>
-    Name: <input type="text" name="q" value="{{.Get "q"}}">
+    <table>
+      <tr>
+        <td>Name:</td>
+        <td><input type="text" name="q" value="{{.Get "q"}}"></td>
+      </tr>
+      <tr>
+        <td>Date:</td>
+        <td><input type="text" name="date" value="{{.Get "date"}}"></td>
+      </tr>
+    </table>
     <input type="submit" value="Search">
   </form>
   <hr>
@@ -90,7 +99,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http_util.WriteTemplate(w, kTemplate, &view{
 		Values:      http_util.Values{r.Form},
 		Results:     consumer.Entries(),
-		CurrentDate: birthday.Today(),
+		CurrentDate: common.ParseDate(r.Form.Get("date")),
 	})
 }
 

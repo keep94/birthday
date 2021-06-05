@@ -5,11 +5,10 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/keep94/birthday"
 	"github.com/keep94/birthday/cmd/remind/common"
-	"github.com/keep94/toolbox/date_util"
+	"github.com/keep94/consume"
 	"github.com/keep94/toolbox/http_util"
 )
 
@@ -71,8 +70,10 @@ type Handler struct {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	reminder := birthday.NewReminder(
-		getDate(r.Form.Get("date")), h.getDays(r.Form.Get("days")))
-	err := birthday.ReadFile(h.File, reminder)
+		common.ParseDate(r.Form.Get("date")), h.parseDays(r.Form.Get("days")))
+	err := birthday.ReadFile(
+		h.File,
+		consume.MapFilter(reminder, birthday.Query(r.Form.Get("q"))))
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
@@ -81,7 +82,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http_util.WriteTemplate(w, kTemplate, &view{Milestones: milestones})
 }
 
-func (h *Handler) getDays(daysStr string) int {
+func (h *Handler) parseDays(daysStr string) int {
 	result, err := strconv.Atoi(daysStr)
 	if err != nil {
 		return h.DaysAhead
@@ -90,22 +91,6 @@ func (h *Handler) getDays(daysStr string) int {
 		result = kMaxDaysAhead
 	}
 	return result
-}
-
-func fixMissingYear(date time.Time) time.Time {
-	if birthday.HasYear(date) {
-		return date
-	}
-	today := birthday.Today()
-	return date_util.YMD(today.Year(), int(date.Month()), date.Day())
-}
-
-func getDate(dateStr string) time.Time {
-	result, err := birthday.Parse(dateStr)
-	if err != nil {
-		return birthday.Today()
-	}
-	return fixMissingYear(result)
 }
 
 type view struct {
