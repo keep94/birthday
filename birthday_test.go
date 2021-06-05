@@ -632,52 +632,28 @@ func TestRemindAgain(t *testing.T) {
 
 func TestFilterNone(t *testing.T) {
 	assert := asserts.New(t)
-	search := birthday.NewSearch("")
-	e := birthday.Entry{
+	queryFunc := birthday.Query("")
+	assert.True(queryFunc(&birthday.Entry{
 		Name:     "Bob",
 		Birthday: date_util.YMD(0, 10, 15),
-	}
-	search.Consume(&e)
-	e = birthday.Entry{
+	}))
+	assert.True(queryFunc(&birthday.Entry{
 		Name:     "Billy",
 		Birthday: date_util.YMD(1968, 11, 1),
-	}
-	search.Consume(&e)
-	assert.Equal(
-		[]birthday.Entry{
-			{
-				Name:     "Billy",
-				Birthday: date_util.YMD(1968, 11, 1),
-			},
-			{
-				Name:     "Bob",
-				Birthday: date_util.YMD(0, 10, 15),
-			},
-		},
-		search.Results())
+	}))
 }
 
 func TestFilterSome(t *testing.T) {
 	assert := asserts.New(t)
-	search := birthday.NewSearch("jOHN  dOe")
-	e := birthday.Entry{
+	queryFunc := birthday.Query("jOHN  dOe")
+	assert.True(queryFunc(&birthday.Entry{
 		Name:     "John Doe",
 		Birthday: date_util.YMD(2019, 10, 15),
-	}
-	search.Consume(&e)
-	e = birthday.Entry{
+	}))
+	assert.False(queryFunc(&birthday.Entry{
 		Name:     "Billy",
 		Birthday: date_util.YMD(1968, 11, 1),
-	}
-	search.Consume(&e)
-	assert.Equal(
-		[]birthday.Entry{
-			{
-				Name:     "John Doe",
-				Birthday: date_util.YMD(2019, 10, 15),
-			},
-		},
-		search.Results())
+	}))
 }
 
 func getMilestones(

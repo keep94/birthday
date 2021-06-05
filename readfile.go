@@ -6,15 +6,12 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/keep94/consume"
 )
 
-// Interface Consumer consumes entries from a birthday file.
-type Consumer interface {
-	Consume(e *Entry)
-}
-
-// ReadFile reads a birthday file letting consumer consume each entry.
-func ReadFile(filename string, consumer Consumer) error {
+// ReadFile reads a birthday file. consumer consumes Entry instances.
+func ReadFile(filename string, consumer consume.Consumer) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -23,12 +20,12 @@ func ReadFile(filename string, consumer Consumer) error {
 	return Read(file, consumer)
 }
 
-// Read reads a birthday file letting consumer consume each entry.
-func Read(r io.Reader, consumer Consumer) error {
+// Read reads a birthday file. consumer consumes Entry instances.
+func Read(r io.Reader, consumer consume.Consumer) error {
 	scanner := bufio.NewScanner(r)
 	lineNo := 0
 	var entry Entry
-	for scanner.Scan() {
+	for scanner.Scan() && consumer.CanConsume() {
 		entry = Entry{}
 		lineNo++
 		line := scanner.Text()

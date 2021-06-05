@@ -9,6 +9,7 @@ import (
 
 	"github.com/keep94/birthday"
 	"github.com/keep94/birthday/cmd/remind/common"
+	"github.com/keep94/consume"
 	"github.com/keep94/toolbox/http_util"
 )
 
@@ -78,15 +79,17 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	search := birthday.NewSearch(r.Form.Get("q"))
-	err := birthday.ReadFile(h.File, search)
+	var consumer birthday.EntryConsumer
+	err := birthday.ReadFile(
+		h.File,
+		consume.MapFilter(&consumer, birthday.Query(r.Form.Get("q"))))
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
 	}
 	http_util.WriteTemplate(w, kTemplate, &view{
 		Values:      http_util.Values{r.Form},
-		Results:     search.Results(),
+		Results:     consumer.Entries(),
 		CurrentDate: birthday.Today(),
 	})
 }

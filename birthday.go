@@ -297,6 +297,8 @@ func (m *Milestone) AgeString() string {
 // Reminder reminds of upcoming milestones for people.
 // Caller adds people with the Consume() method then the caller calls
 // Milestones() to see all the people with upcoming milestones.
+// Reminder implements the consume.Consumer interface and consumes Entry
+// instances.
 type Reminder struct {
 	currentDate time.Time
 	daysAhead   int
@@ -330,8 +332,15 @@ func (r *Reminder) SetPeriods(periods ...Period) {
 	copy(r.periods, periods)
 }
 
-// Consume consumes an entry.
-func (r *Reminder) Consume(e *Entry) {
+// CanConsume always returns true
+func (r *Reminder) CanConsume() bool {
+	return true
+}
+
+// Consume consumes an Entry instance. ptr points to the Entry instance
+// being consumed.
+func (r *Reminder) Consume(ptr interface{}) {
+	e := ptr.(*Entry)
 	hasYear := HasYear(e.Birthday)
 	for _, p := range r.periods {
 		if hasYear || p == yearly {
@@ -341,7 +350,7 @@ func (r *Reminder) Consume(e *Entry) {
 }
 
 // Milestones returns upcoming milestones for people consumed so far.
-// Milestones happening soonest come first followed by milestones happining
+// Milestones happening soonest come first followed by milestones happening
 // later.
 func (r *Reminder) Milestones() []Milestone {
 	result := make([]Milestone, len(r.milestones))
@@ -394,28 +403,27 @@ func (r *Reminder) addPeriodMilestones(e *Entry, period Period) {
 	}
 }
 
-// Search searches for people by name
-type Search struct {
-	query   string
+// EntryConsumer implements the consume.Consumer interface and consumes
+// Entry instances.
+type EntryConsumer struct {
 	entries []Entry
 }
 
-// NewSearch returns a new search. query is a search string. Searches ignore
-// case and extra whitespace.
-func NewSearch(query string) *Search {
-	return &Search{query: str_util.Normalize(query)}
+// CanConsume always returns true
+func (e *EntryConsumer) CanConsume() bool {
+	return true
 }
 
-// Consume consumes an entry.
-func (s *Search) Consume(e *Entry) {
-	if strings.Contains(str_util.Normalize(e.Name), s.query) {
-		s.entries = append(s.entries, *e)
-	}
+// Consume consumes an Entry instance. ptr points to the Entry instance
+// being consumed.
+func (e *EntryConsumer) Consume(ptr interface{}) {
+	p := ptr.(*Entry)
+	e.entries = append(e.entries, *p)
 }
 
-// Results returns the results that match the query string for this instance
-// sorted by name.
-func (s *Search) Results() []Entry {
+// Entries returns the consumed Entry instances sorted by Name in ascending
+// order.
+func (s *EntryConsumer) Entries() []Entry {
 	result := make([]Entry, len(s.entries))
 	copy(result, s.entries)
 	sort.SliceStable(
@@ -423,6 +431,15 @@ func (s *Search) Results() []Entry {
 		func(i, j int) bool { return result[i].Name < result[j].Name },
 	)
 	return result
+}
+
+// Query returns a function that returns true if the Entry instance passed
+// to it matches query.
+func Query(query string) func(entry *Entry) bool {
+	query = str_util.Normalize(query)
+	return func(entry *Entry) bool {
+		return strings.Contains(str_util.Normalize(entry.Name), query)
+	}
 }
 
 func floorDiv(x, positiveY int) int {

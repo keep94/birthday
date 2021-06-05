@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/keep94/birthday"
+	"github.com/keep94/consume"
 	"github.com/keep94/toolbox/date_util"
 	asserts "github.com/stretchr/testify/assert"
 )
@@ -17,8 +18,8 @@ func TestMalformattedLine(t *testing.T) {
 
 Jack Sprat
 `
-	search := birthday.NewSearch("")
-	err := birthday.Read(strings.NewReader(fileContents), search)
+	var consumer birthday.EntryConsumer
+	err := birthday.Read(strings.NewReader(fileContents), &consumer)
 	assert.EqualError(err, "Line 4 malformatted")
 }
 
@@ -30,8 +31,8 @@ func TestBadDateWithYear(t *testing.T) {
 
 Jack Sprat	08/32/2006
 `
-	search := birthday.NewSearch("")
-	err := birthday.Read(strings.NewReader(fileContents), search)
+	var consumer birthday.EntryConsumer
+	err := birthday.Read(strings.NewReader(fileContents), &consumer)
 	assert.EqualError(err, "Line 4 contains invalid birthday")
 }
 
@@ -43,8 +44,8 @@ func TestBadDate(t *testing.T) {
 
 Jack Sprat	08/32
 `
-	search := birthday.NewSearch("")
-	err := birthday.Read(strings.NewReader(fileContents), search)
+	var consumer birthday.EntryConsumer
+	err := birthday.Read(strings.NewReader(fileContents), &consumer)
 	assert.EqualError(err, "Line 4 contains invalid birthday")
 }
 
@@ -57,8 +58,8 @@ func TestReadLines(t *testing.T) {
 Jack Sprat	08/31/2006	Tea
 Alice Doe	12/15
 `
-	search := birthday.NewSearch("")
-	err := birthday.Read(strings.NewReader(fileContents), search)
+	var consumer birthday.EntryConsumer
+	err := birthday.Read(strings.NewReader(fileContents), &consumer)
 	assert.NoError(err)
 	assert.Equal([]birthday.Entry{
 		{
@@ -69,7 +70,28 @@ Alice Doe	12/15
 			Name:     "Jack Sprat",
 			Birthday: date_util.YMD(2006, 8, 31),
 		},
-	}, search.Results())
+	}, consumer.Entries())
+}
+
+func TestReadLinesQuitEarly(t *testing.T) {
+	assert := asserts.New(t)
+
+	fileContents := `
+# This is a comment
+
+Jack Sprat	08/31/2006	Tea
+Alice Doe	12/15
+`
+	var consumer birthday.EntryConsumer
+	err := birthday.Read(
+		strings.NewReader(fileContents), consume.Slice(&consumer, 0, 1))
+	assert.NoError(err)
+	assert.Equal([]birthday.Entry{
+		{
+			Name:     "Jack Sprat",
+			Birthday: date_util.YMD(2006, 8, 31),
+		},
+	}, consumer.Entries())
 }
 
 func TestReadLinesWithWhitespace(t *testing.T) {
@@ -81,8 +103,8 @@ func TestReadLinesWithWhitespace(t *testing.T) {
 	Jack Sprat	08/31/2006	Tea
 	Alice Doe	12/15     
 `
-	search := birthday.NewSearch("")
-	err := birthday.Read(strings.NewReader(fileContents), search)
+	var consumer birthday.EntryConsumer
+	err := birthday.Read(strings.NewReader(fileContents), &consumer)
 	assert.NoError(err)
 	assert.Equal([]birthday.Entry{
 		{
@@ -93,5 +115,5 @@ func TestReadLinesWithWhitespace(t *testing.T) {
 			Name:     "Jack Sprat",
 			Birthday: date_util.YMD(2006, 8, 31),
 		},
-	}, search.Results())
+	}, consumer.Entries())
 }
