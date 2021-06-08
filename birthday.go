@@ -251,8 +251,8 @@ func (p *Period) normalizeDays() {
 // Milestone represents a milestone day.
 type Milestone struct {
 
-	// The name of the person having the milestone
-	Name string
+	// The person having the milestone
+	Entry
 
 	// The date of the milestone day
 	Date time.Time
@@ -422,7 +422,7 @@ func (g *generator) Next(current time.Time) Milestone {
 	}
 	nextMilestone := g.period.Add(g.entry.Birthday, g.count)
 	result := Milestone{
-		Name:       g.entry.Name,
+		Entry:      g.entry,
 		Date:       nextMilestone,
 		DaysAway:   DiffInDays(nextMilestone, current),
 		Age:        age,
