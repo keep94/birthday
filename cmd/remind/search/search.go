@@ -39,16 +39,7 @@ var (
 <body>
   <h1>Birthdays</h1>
   <form>
-    <table>
-      <tr>
-        <td>Name:</td>
-        <td><input type="text" name="q" value="{{.Get "q"}}"></td>
-      </tr>
-      <tr>
-        <td>Date:</td>
-        <td><input type="text" name="date" value="{{.Get "date"}}"></td>
-      </tr>
-    </table>
+     Name: <input type="text" name="q" value="{{.Get "q"}}">
     <input type="submit" value="Search">
   </form>
   <hr>
