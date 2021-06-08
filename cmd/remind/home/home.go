@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	kMaxDaysAhead = 365
+	kMaxMilestones = 100
 )
 
 var (
@@ -69,16 +69,28 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	reminder := birthday.NewReminder(
-		common.ParseDate(r.Form.Get("date")), h.parseDays(r.Form.Get("days")))
+	var entries []birthday.Entry
 	err := birthday.ReadFile(
 		h.File,
-		consume.MapFilter(reminder, birthday.Query(r.Form.Get("q"))))
+		consume.MapFilter(
+			consume.AppendTo(&entries), birthday.Query(r.Form.Get("q"))))
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
 	}
-	milestones := reminder.Milestones()
+	daysAhead := h.parseDays(r.Form.Get("days"))
+	var milestones []birthday.Milestone
+	birthday.Remind(
+		entries,
+		birthday.DefaultPeriods,
+		common.ParseDate(r.Form.Get("date")),
+		consume.TakeWhile(
+			consume.Slice(consume.AppendTo(&milestones), 0, kMaxMilestones),
+			func(m *birthday.Milestone) bool {
+				return m.DaysAway < daysAhead
+			},
+		),
+	)
 	http_util.WriteTemplate(w, kTemplate, &view{Milestones: milestones})
 }
 
@@ -86,9 +98,6 @@ func (h *Handler) parseDays(daysStr string) int {
 	result, err := strconv.Atoi(daysStr)
 	if err != nil {
 		return h.DaysAhead
-	}
-	if result > kMaxDaysAhead {
-		result = kMaxDaysAhead
 	}
 	return result
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/keep94/birthday"
+	"github.com/keep94/consume"
 )
 
 var (
@@ -21,12 +22,14 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	reminder := birthday.NewReminder(birthday.Today(), fDaysAhead)
-	err := birthday.ReadFile(fFile, reminder)
+	var entries []birthday.Entry
+	err := birthday.ReadFile(fFile, consume.AppendTo(&entries))
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, milestone := range reminder.Milestones() {
+	var consumer consume.Consumer
+	consumer = consume.ConsumerFunc(func(ptr interface{}) {
+		milestone := ptr.(*birthday.Milestone)
 		astricks := " "
 		if milestone.DaysAway == 0 {
 			astricks = "*"
@@ -37,7 +40,18 @@ func main() {
 			birthday.ToStringWithWeekDay(milestone.Date),
 			milestone.AgeString(),
 			milestone.Name)
-	}
+	})
+	birthday.Remind(
+		entries,
+		birthday.DefaultPeriods,
+		birthday.Today(),
+		consume.TakeWhile(
+			consumer,
+			func(m *birthday.Milestone) bool {
+				return m.DaysAway < fDaysAhead
+			},
+		),
+	)
 }
 
 func init() {

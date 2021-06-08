@@ -2,6 +2,7 @@
 package birthday
 
 import (
+	"container/heap"
 	"errors"
 	"fmt"
 	"sort"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/keep94/consume"
 	"github.com/keep94/toolbox/date_util"
 	"github.com/keep94/toolbox/str_util"
 )
@@ -17,15 +19,18 @@ const (
 	kInvalidPeriod = "invalid period"
 )
 
-var yearly = Period{Years: 1}
+var (
+	// Currently yearly, 100 months, 100 weeks, 1000 days, and 6 months.
+	DefaultPeriods = []Period{
+		{Years: 1},
+		{Months: 100},
+		{Weeks: 100},
+		{Days: 1000},
+		{Months: 6, Normalize: true},
+	}
+)
 
-var defaultPeriods = []Period{
-	{Years: 1},
-	{Months: 100},
-	{Months: 6, Normalize: true},
-	{Weeks: 100},
-	{Days: 1000},
-}
+var yearly = Period{Years: 1}
 
 // Today returns today's date at midnight in UTC.
 func Today() time.Time {
@@ -294,115 +299,6 @@ func (m *Milestone) AgeString() string {
 	return m.Age.String()
 }
 
-// Reminder reminds of upcoming milestones for people.
-// Caller adds people with the Consume() method then the caller calls
-// Milestones() to see all the people with upcoming milestones.
-// Reminder implements the consume.Consumer interface and consumes Entry
-// instances.
-type Reminder struct {
-	currentDate time.Time
-	daysAhead   int
-	periods     []Period
-	milestones  []Milestone
-}
-
-// NewReminder creates a new Reminder instance. currentDate is the current
-// date. daysAhead controls how many days in the future milestones can be.
-// By default the new instance reminds of yearly birthdays, each 100 months,
-// each 100 weeks, each 1000 days, and each 6 months. Caller can change this
-// by calling SetPeriods.
-func NewReminder(currentDate time.Time, daysAhead int) *Reminder {
-	result := &Reminder{
-		currentDate: currentDate,
-		daysAhead:   daysAhead,
-		periods:     defaultPeriods}
-	return result
-}
-
-// SetPeriods sets the periods for which this reminder will remind overriding
-// previously set periods. SetPeriods panics if any of the periods passed to
-// it are invalid.
-func (r *Reminder) SetPeriods(periods ...Period) {
-	for _, p := range periods {
-		if !p.Valid() {
-			panic(kInvalidPeriod)
-		}
-	}
-	r.periods = make([]Period, len(periods))
-	copy(r.periods, periods)
-}
-
-// CanConsume always returns true
-func (r *Reminder) CanConsume() bool {
-	return true
-}
-
-// Consume consumes an Entry instance. ptr points to the Entry instance
-// being consumed.
-func (r *Reminder) Consume(ptr interface{}) {
-	e := ptr.(*Entry)
-	hasYear := HasYear(e.Birthday)
-	for _, p := range r.periods {
-		if hasYear || p == yearly {
-			r.addPeriodMilestones(e, p)
-		}
-	}
-}
-
-// Milestones returns upcoming milestones for people consumed so far.
-// Milestones happening soonest come first followed by milestones happening
-// later.
-func (r *Reminder) Milestones() []Milestone {
-	result := make([]Milestone, len(r.milestones))
-	copy(result, r.milestones)
-	sort.Slice(
-		result,
-		func(i, j int) bool { return result[i].Less(&result[j]) })
-	removeDuplicateMilestones(&result)
-	return result
-}
-
-func removeDuplicateMilestones(milestones *[]Milestone) {
-	if len(*milestones) == 0 {
-		return
-	}
-	idx := 1
-	for i := 1; i < len(*milestones); i++ {
-		if (*milestones)[idx-1].Less(&(*milestones)[i]) {
-			(*milestones)[idx] = (*milestones)[i]
-			idx++
-		}
-	}
-	*milestones = (*milestones)[:idx]
-}
-
-func (r *Reminder) addPeriodMilestones(e *Entry, period Period) {
-	hasYear := HasYear(e.Birthday)
-	yesterday := r.currentDate.AddDate(0, 0, -1)
-	count := period.Diff(yesterday, e.Birthday) + 1
-	if count < 0 {
-		count = 0
-	}
-	nextMilestone := period.Add(e.Birthday, count)
-	daysAway := DiffInDays(nextMilestone, r.currentDate)
-	for daysAway < r.daysAhead {
-		var age Period
-		if hasYear {
-			age = period.Multiply(count)
-		}
-		r.milestones = append(r.milestones, Milestone{
-			Name:       e.Name,
-			Date:       nextMilestone,
-			DaysAway:   daysAway,
-			Age:        age,
-			AgeUnknown: !hasYear,
-		})
-		count++
-		nextMilestone = period.Add(e.Birthday, count)
-		daysAway = DiffInDays(nextMilestone, r.currentDate)
-	}
-}
-
 // EntryConsumer implements the consume.Consumer interface and consumes
 // Entry instances.
 type EntryConsumer struct {
@@ -442,6 +338,127 @@ func Query(query string) func(entry *Entry) bool {
 	}
 }
 
+// Remind sends an infinite stream of Milestone instances to consumer
+// for the specified entries and periods starting at the date specified by
+// current. Remind sends Milestone instances to consumer in
+// chronological order.
+func Remind(
+	entries []Entry,
+	periods []Period,
+	current time.Time,
+	consumer consume.Consumer) {
+	checkPeriods(periods)
+	mh := createMilestoneHeap(entries, periods, current)
+	if len(mh) == 0 {
+		return
+	}
+	milestone := mh[0].Milestone
+	for consumer.CanConsume() {
+		consumer.Consume(&milestone)
+		for !milestone.Less(&mh[0].Milestone) {
+			mh[0].Advance(current)
+			heap.Fix(&mh, 0)
+		}
+		milestone = mh[0].Milestone
+	}
+}
+
+func createMilestoneHeap(
+	entries []Entry, periods []Period, current time.Time) milestoneHeap {
+	var result milestoneHeap
+	for i := range entries {
+		hasYear := HasYear(entries[i].Birthday)
+		for j := range periods {
+			if hasYear || periods[j] == yearly {
+				result = append(
+					result,
+					createMilestoneGenerator(
+						&entries[i], periods[j], current))
+			}
+		}
+	}
+	heap.Init(&result)
+	return result
+}
+
+type milestoneGenerator struct {
+	Generator generator
+	Milestone Milestone
+}
+
+func createMilestoneGenerator(
+	entry *Entry, period Period, current time.Time) *milestoneGenerator {
+	var result milestoneGenerator
+	result.Generator.Init(entry, period, current)
+	result.Advance(current)
+	return &result
+}
+
+func (gm *milestoneGenerator) Advance(current time.Time) {
+	gm.Milestone = gm.Generator.Next(current)
+}
+
+type generator struct {
+	entry  Entry
+	period Period
+	count  int
+}
+
+func (g *generator) Init(
+	entry *Entry, period Period, current time.Time) {
+	yesterday := current.AddDate(0, 0, -1)
+	count := period.Diff(yesterday, entry.Birthday) + 1
+	if count < 0 {
+		count = 0
+	}
+	*g = generator{entry: *entry, period: period, count: count}
+}
+
+func (g *generator) Next(current time.Time) Milestone {
+	hasYear := HasYear(g.entry.Birthday)
+	var age Period
+	if hasYear {
+		age = g.period.Multiply(g.count)
+	}
+	nextMilestone := g.period.Add(g.entry.Birthday, g.count)
+	result := Milestone{
+		Name:       g.entry.Name,
+		Date:       nextMilestone,
+		DaysAway:   DiffInDays(nextMilestone, current),
+		Age:        age,
+		AgeUnknown: !hasYear,
+	}
+	g.count++
+	return result
+}
+
+type milestoneHeap []*milestoneGenerator
+
+func (m milestoneHeap) Less(i, j int) bool {
+	return m[i].Milestone.Less(&m[j].Milestone)
+}
+
+func (m milestoneHeap) Swap(i, j int) {
+	m[i], m[j] = m[j], m[i]
+}
+
+func (m milestoneHeap) Len() int {
+	return len(m)
+}
+
+func (m *milestoneHeap) Push(x interface{}) {
+	mg := x.(*milestoneGenerator)
+	*m = append(*m, mg)
+}
+
+func (m *milestoneHeap) Pop() interface{} {
+	old := *m
+	n := len(old)
+	x := old[n-1]
+	*m = old[0 : n-1]
+	return x
+}
+
 func floorDiv(x, positiveY int) int {
 	if positiveY <= 0 {
 		panic("positiveY must be positive")
@@ -470,4 +487,12 @@ func asDays(t time.Time) int {
 		days--
 	}
 	return days
+}
+
+func checkPeriods(periods []Period) {
+	for _, p := range periods {
+		if !p.Valid() {
+			panic(kInvalidPeriod)
+		}
+	}
 }

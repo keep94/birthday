@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/keep94/birthday"
+	"github.com/keep94/consume"
 	"github.com/keep94/toolbox/date_util"
 	asserts "github.com/stretchr/testify/assert"
 )
@@ -368,27 +369,54 @@ func TestMilestonesYearAfter(t *testing.T) {
 
 func TestRemindPanic(t *testing.T) {
 	assert := asserts.New(t)
-	currentDate := date_util.YMD(2023, 1, 20)
-	r := birthday.NewReminder(currentDate, 500)
-	assert.Panics(func() { r.SetPeriods(birthday.Period{}) })
+	assert.Panics(func() {
+		getMilestonesWithOptions(
+			nil,
+			[]birthday.Period{{}},
+			date_util.YMD(2023, 1, 20),
+			500)
+	})
+}
+
+func TestRemindNone(t *testing.T) {
+	assert := asserts.New(t)
+	milestones := getMilestonesWithOptions(
+		nil,
+		[]birthday.Period{years},
+		date_util.YMD(2023, 1, 20),
+		4000)
+	assert.Empty(milestones)
+	milestones = getMilestonesWithOptions(
+		[]birthday.Entry{{Birthday: date_util.YMD(1996, 1, 20)}},
+		nil,
+		date_util.YMD(2023, 1, 20),
+		4000)
+	assert.Empty(milestones)
+	milestones = getMilestonesWithOptions(
+		[]birthday.Entry{{Birthday: date_util.YMD(0, 1, 20)}},
+		[]birthday.Period{thousandDays},
+		date_util.YMD(2023, 1, 20),
+		4000)
+	assert.Empty(milestones)
 }
 
 func TestRemindNoYears(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2023, 1, 20)
-	r := birthday.NewReminder(currentDate, 500)
-	r.SetPeriods(thousandDays)
-	e := birthday.Entry{
-		Name:     "Mark",
-		Birthday: date_util.YMD(2023, 1, 20),
-	}
-	r.Consume(&e)
-	e = birthday.Entry{
-		Name:     "Steve",
-		Birthday: date_util.YMD(0, 2, 29),
-	}
-	r.Consume(&e)
-	milestones := r.Milestones()
+	milestones := getMilestonesWithOptions(
+		[]birthday.Entry{
+			{
+				Name:     "Mark",
+				Birthday: date_util.YMD(2023, 1, 20),
+			},
+			{
+				Name:     "Steve",
+				Birthday: date_util.YMD(0, 2, 29),
+			},
+		},
+		[]birthday.Period{thousandDays},
+		currentDate,
+		500)
 	assert.Equal(
 		[]birthday.Milestone{
 			{
@@ -403,13 +431,17 @@ func TestRemindNoYears(t *testing.T) {
 func TestRemindWithEverything(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2017, 6, 11)
-	r := birthday.NewReminder(currentDate, 1001)
-	e := birthday.Entry{
-		Name:     "Mark",
-		Birthday: date_util.YMD(1968, 2, 29),
-	}
-	r.Consume(&e)
-	milestones := r.Milestones()
+	milestones := getMilestonesWithOptions(
+		[]birthday.Entry{
+			{
+				Name:     "Mark",
+				Birthday: date_util.YMD(1968, 2, 29),
+			},
+		},
+		[]birthday.Period{
+			years, hundredMonths, hundredWeeks, thousandDays, sixMonths},
+		currentDate,
+		1001)
 	assert.Equal([]birthday.Milestone{
 		{
 			Name:     "Mark",
@@ -483,14 +515,16 @@ func TestRemindWithEverything(t *testing.T) {
 func TestRemindWithWeeks(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2017, 12, 28)
-	r := birthday.NewReminder(currentDate, 701)
-	r.SetPeriods(hundredWeeks)
-	e := birthday.Entry{
-		Name:     "Mark",
-		Birthday: date_util.YMD(1968, 2, 29),
-	}
-	r.Consume(&e)
-	milestones := r.Milestones()
+	milestones := getMilestonesWithOptions(
+		[]birthday.Entry{
+			{
+				Name:     "Mark",
+				Birthday: date_util.YMD(1968, 2, 29),
+			},
+		},
+		[]birthday.Period{hundredWeeks},
+		currentDate,
+		701)
 	assert.Equal([]birthday.Milestone{
 		{
 			Name:     "Mark",
@@ -510,19 +544,20 @@ func TestRemindWithWeeks(t *testing.T) {
 func TestRemind(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2023, 1, 20)
-	r := birthday.NewReminder(currentDate, 500)
-	r.SetPeriods(years, thousandDays)
-	e := birthday.Entry{
-		Name:     "Mark",
-		Birthday: date_util.YMD(2023, 1, 20),
-	}
-	r.Consume(&e)
-	e = birthday.Entry{
-		Name:     "Steve",
-		Birthday: date_util.YMD(0, 2, 29),
-	}
-	r.Consume(&e)
-	milestones := r.Milestones()
+	milestones := getMilestonesWithOptions(
+		[]birthday.Entry{
+			{
+				Name:     "Mark",
+				Birthday: date_util.YMD(2023, 1, 20),
+			},
+			{
+				Name:     "Steve",
+				Birthday: date_util.YMD(0, 2, 29),
+			},
+		},
+		[]birthday.Period{years, thousandDays},
+		currentDate,
+		500)
 	assert.Equal(
 		[]birthday.Milestone{
 			{
@@ -555,19 +590,20 @@ func TestRemind(t *testing.T) {
 func TestRemindHalfYear(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2021, 3, 20)
-	r := birthday.NewReminder(currentDate, 300)
-	r.SetPeriods(years, sixMonths)
-	e := birthday.Entry{
-		Name:     "Mark",
-		Birthday: date_util.YMD(1985, 3, 27),
-	}
-	r.Consume(&e)
-	e = birthday.Entry{
-		Name:     "Steve",
-		Birthday: date_util.YMD(1984, 3, 27),
-	}
-	r.Consume(&e)
-	milestones := r.Milestones()
+	milestones := getMilestonesWithOptions(
+		[]birthday.Entry{
+			{
+				Name:     "Mark",
+				Birthday: date_util.YMD(1985, 3, 27),
+			},
+			{
+				Name:     "Steve",
+				Birthday: date_util.YMD(1984, 3, 27),
+			},
+		},
+		[]birthday.Period{years, sixMonths},
+		currentDate,
+		300)
 	assert.Equal(
 		[]birthday.Milestone{
 			{
@@ -601,11 +637,11 @@ func TestRemindHalfYear(t *testing.T) {
 func TestRemindAgain(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2023, 1, 20)
-	r := birthday.NewReminder(currentDate, 406)
-	r.SetPeriods(years, thousandDays)
-	e := birthday.Entry{Name: "Matt", Birthday: date_util.YMD(1952, 2, 29)}
-	r.Consume(&e)
-	milestones := r.Milestones()
+	milestones := getMilestonesWithOptions(
+		[]birthday.Entry{{Name: "Matt", Birthday: date_util.YMD(1952, 2, 29)}},
+		[]birthday.Period{years, thousandDays},
+		currentDate,
+		406)
 	assert.Equal(
 		[]birthday.Milestone{
 			{
@@ -656,11 +692,29 @@ func TestFilterSome(t *testing.T) {
 	}))
 }
 
+func getMilestonesWithOptions(
+	entries []birthday.Entry,
+	periods []birthday.Period,
+	currentDate time.Time,
+	daysAhead int) []birthday.Milestone {
+	var result []birthday.Milestone
+	birthday.Remind(
+		entries,
+		periods,
+		currentDate,
+		consume.TakeWhile(
+			consume.AppendTo(&result),
+			func(m *birthday.Milestone) bool { return m.DaysAway < daysAhead },
+		),
+	)
+	return result
+}
+
 func getMilestones(
 	currentDate, b time.Time, daysAhead int) []birthday.Milestone {
-	r := birthday.NewReminder(currentDate, daysAhead)
-	r.SetPeriods(years, thousandDays)
-	e := birthday.Entry{Birthday: b}
-	r.Consume(&e)
-	return r.Milestones()
+	return getMilestonesWithOptions(
+		[]birthday.Entry{{Birthday: b}},
+		[]birthday.Period{years, thousandDays},
+		currentDate,
+		daysAhead)
 }
