@@ -698,6 +698,31 @@ func TestFilterSome(t *testing.T) {
 	}))
 }
 
+func TestEntriesSortedByName(t *testing.T) {
+	assert := asserts.New(t)
+	entries := []birthday.Entry{
+		{Name: "Steven"},
+		{Name: "George"},
+		{Name: "Mary"},
+	}
+	assert.Equal(
+		[]birthday.Entry{
+			{Name: "George"},
+			{Name: "Mary"},
+			{Name: "Steven"},
+		},
+		birthday.EntriesSortedByName(entries),
+	)
+	assert.Equal(
+		[]birthday.Entry{
+			{Name: "Steven"},
+			{Name: "George"},
+			{Name: "Mary"},
+		},
+		entries,
+	)
+}
+
 type testMilestone struct {
 	Name       string
 	Date       time.Time

@@ -127,6 +127,18 @@ type Entry struct {
 	Birthday time.Time
 }
 
+// EntriesSortedByName returns entries sorted by name while leaving the
+// original entries slice unchanged.
+func EntriesSortedByName(entries []Entry) []Entry {
+	result := make([]Entry, len(entries))
+	copy(result, entries)
+	sort.SliceStable(
+		result,
+		func(i, j int) bool { return result[i].Name < result[j].Name },
+	)
+	return result
+}
+
 // Period represents a period of time
 type Period struct {
 	Years  int
@@ -297,36 +309,6 @@ func (m *Milestone) AgeString() string {
 		return "? years"
 	}
 	return m.Age.String()
-}
-
-// EntryConsumer implements the consume.Consumer interface and consumes
-// Entry instances.
-type EntryConsumer struct {
-	entries []Entry
-}
-
-// CanConsume always returns true
-func (e *EntryConsumer) CanConsume() bool {
-	return true
-}
-
-// Consume consumes an Entry instance. ptr points to the Entry instance
-// being consumed.
-func (e *EntryConsumer) Consume(ptr interface{}) {
-	p := ptr.(*Entry)
-	e.entries = append(e.entries, *p)
-}
-
-// Entries returns the consumed Entry instances sorted by Name in ascending
-// order.
-func (s *EntryConsumer) Entries() []Entry {
-	result := make([]Entry, len(s.entries))
-	copy(result, s.entries)
-	sort.SliceStable(
-		result,
-		func(i, j int) bool { return result[i].Name < result[j].Name },
-	)
-	return result
 }
 
 // Query returns a function that returns true if the Entry instance passed

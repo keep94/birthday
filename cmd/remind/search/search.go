@@ -79,17 +79,18 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var consumer birthday.EntryConsumer
+	var entries []birthday.Entry
 	err := birthday.ReadFile(
 		h.File,
-		consume.MapFilter(&consumer, birthday.Query(r.Form.Get("q"))))
+		consume.MapFilter(
+			consume.AppendTo(&entries), birthday.Query(r.Form.Get("q"))))
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
 	}
 	http_util.WriteTemplate(w, kTemplate, &view{
 		Values:      http_util.Values{r.Form},
-		Results:     consumer.Entries(),
+		Results:     birthday.EntriesSortedByName(entries),
 		CurrentDate: common.ParseDate(r.Form.Get("date")),
 	})
 }
