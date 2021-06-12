@@ -14,6 +14,13 @@ import (
 )
 
 var (
+	kYears  = birthday.Period{Years: 1}
+	kMonths = birthday.Period{Months: 1}
+	kWeeks  = birthday.Period{Weeks: 1}
+	kDays   = birthday.Period{Days: 1}
+)
+
+var (
 	kTemplateSpec = `
 <html>
 <head>
@@ -106,26 +113,26 @@ func (b *view) BirthdayStr(entry *birthday.Entry) string {
 }
 
 func (v *view) InYearsStr(entry *birthday.Entry) string {
-	return v.inUnitStr(entry, birthday.DiffInYears)
+	return v.inUnitStr(entry, kYears)
 }
 
 func (v *view) InMonthsStr(entry *birthday.Entry) string {
-	return v.inUnitStr(entry, birthday.DiffInMonths)
+	return v.inUnitStr(entry, kMonths)
 }
 
 func (v *view) InWeeksStr(entry *birthday.Entry) string {
-	return v.inUnitStr(entry, birthday.DiffInWeeks)
+	return v.inUnitStr(entry, kWeeks)
 }
 
 func (v *view) InDaysStr(entry *birthday.Entry) string {
-	return v.inUnitStr(entry, birthday.DiffInDays)
+	return v.inUnitStr(entry, kDays)
 }
 
 func (v *view) inUnitStr(
 	entry *birthday.Entry,
-	diffFunc func(end, start time.Time) int) string {
+	period birthday.Period) string {
 	if birthday.HasYear(entry.Birthday) {
-		return strconv.Itoa(diffFunc(v.CurrentDate, entry.Birthday))
+		return strconv.Itoa(period.Diff(v.CurrentDate, entry.Birthday))
 	}
 	return "--"
 }

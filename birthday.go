@@ -97,30 +97,6 @@ func HasYear(t time.Time) bool {
 	return t.Year() > 0
 }
 
-// DiffInYears returns the number of years between start and end rounded down.
-func DiffInYears(end, start time.Time) int {
-	return floorDiv(DiffInMonths(end, start), 12)
-}
-
-// DiffInMonths returns the number of months between start and end rounded
-// down.
-func DiffInMonths(end, start time.Time) int {
-	syear, smonth, sday := start.Date()
-	end = end.AddDate(0, 0, 1-sday)
-	eyear, emonth, _ := end.Date()
-	return (eyear-syear)*12 + int(emonth) - int(smonth)
-}
-
-// DiffInWeeks returns the number of weeks between start and end rounded down
-func DiffInWeeks(end, start time.Time) int {
-	return floorDiv(DiffInDays(end, start), 7)
-}
-
-// DiffInDays returns the number of days between start and end rounded down
-func DiffInDays(end, start time.Time) int {
-	return asDays(end) - asDays(start)
-}
-
 // Entry represents a single entry in the birthday database
 type Entry struct {
 	Name     string
@@ -182,7 +158,7 @@ func (p Period) Less(other Period) bool {
 // Diff returns the number of this period between end and start rounded down.
 // Diff panics if this period is not valid.
 func (p Period) Diff(end, start time.Time) int {
-	diff := float64(DiffInDays(end, start))
+	diff := float64(asDays(end) - asDays(start))
 	approxDays := p.approxDays()
 	if approxDays <= 0.0 {
 		panic(kInvalidPeriod)
@@ -406,7 +382,7 @@ func (g *generator) Next(current time.Time) Milestone {
 	result := Milestone{
 		Entry:      g.entry,
 		Date:       nextMilestone,
-		DaysAway:   DiffInDays(nextMilestone, current),
+		DaysAway:   asDays(nextMilestone) - asDays(current),
 		Age:        age,
 		AgeUnknown: !hasYear,
 	}

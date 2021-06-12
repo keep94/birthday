@@ -10,61 +10,67 @@ import (
 	asserts "github.com/stretchr/testify/assert"
 )
 
-var years = birthday.Period{Years: 1}
-var hundredMonths = birthday.Period{Months: 100}
-var hundredWeeks = birthday.Period{Weeks: 100}
-var thousandDays = birthday.Period{Days: 1000}
-var sixMonths = birthday.Period{Months: 6, Normalize: true}
+var (
+	kYears         = birthday.Period{Years: 1}
+	kHundredMonths = birthday.Period{Months: 100}
+	kHundredWeeks  = birthday.Period{Weeks: 100}
+	kThousandDays  = birthday.Period{Days: 1000}
+	kSixMonths     = birthday.Period{Months: 6, Normalize: true}
+)
 
 func TestDiffInDaysAndWeeks(t *testing.T) {
 	assert := asserts.New(t)
+	days := birthday.Period{Days: 1}
+	weeks := birthday.Period{Weeks: 1}
 	start := date_util.YMD(2020, 2, 29)
 	end := date_util.YMD(2020, 3, 1)
-	assert.Equal(1, birthday.DiffInDays(end, start))
-	assert.Equal(0, birthday.DiffInWeeks(end, start))
+	assert.Equal(1, days.Diff(end, start))
+	assert.Equal(0, weeks.Diff(end, start))
 	start = date_util.YMD(2001, 9, 17)
 	end = date_util.YMD(2018, 8, 5)
-	assert.Equal(6166, birthday.DiffInDays(end, start))
-	assert.Equal(880, birthday.DiffInWeeks(end, start))
-	assert.Equal(-6166, birthday.DiffInDays(start, end))
-	assert.Equal(-881, birthday.DiffInWeeks(start, end))
+	assert.Equal(6166, days.Diff(end, start))
+	assert.Equal(880, weeks.Diff(end, start))
+	assert.Equal(-6166, days.Diff(start, end))
+	assert.Equal(-881, weeks.Diff(start, end))
 }
 
 func TestDiffInMonths(t *testing.T) {
 	assert := asserts.New(t)
+	months := birthday.Period{Months: 1}
 	start := date_util.YMD(2019, 12, 31)
 	end := date_util.YMD(2021, 3, 3)
-	assert.Equal(14, birthday.DiffInMonths(end, start))
+	assert.Equal(14, months.Diff(end, start))
 	end = date_util.YMD(2021, 3, 2)
-	assert.Equal(13, birthday.DiffInMonths(end, start))
+	assert.Equal(13, months.Diff(end, start))
 	end = date_util.YMD(2019, 12, 31)
-	assert.Equal(0, birthday.DiffInMonths(end, start))
+	assert.Equal(0, months.Diff(end, start))
 	end = date_util.YMD(2019, 12, 30)
-	assert.Equal(-1, birthday.DiffInMonths(end, start))
+	assert.Equal(-1, months.Diff(end, start))
 	end = date_util.YMD(1983, 5, 26)
 	start = date_util.YMD(1971, 11, 26)
-	assert.Equal(138, birthday.DiffInMonths(end, start))
+	assert.Equal(138, months.Diff(end, start))
 	end = date_util.YMD(1971, 11, 26)
 	start = date_util.YMD(1983, 5, 26)
-	assert.Equal(-138, birthday.DiffInMonths(end, start))
+	assert.Equal(-138, months.Diff(end, start))
 	end = date_util.YMD(1971, 11, 25)
 	start = date_util.YMD(1983, 5, 26)
-	assert.Equal(-139, birthday.DiffInMonths(end, start))
+	assert.Equal(-139, months.Diff(end, start))
 }
 
 func TestDiffInYears(t *testing.T) {
 	assert := asserts.New(t)
+	years := birthday.Period{Years: 1}
 	end := date_util.YMD(1951, 2, 15)
-	assert.Equal(0, birthday.DiffInYears(end, date_util.YMD(1951, 2, 15)))
-	assert.Equal(-1, birthday.DiffInYears(end, date_util.YMD(1951, 2, 16)))
-	assert.Equal(-1, birthday.DiffInYears(end, date_util.YMD(1951, 3, 1)))
-	assert.Equal(-1, birthday.DiffInYears(end, date_util.YMD(1952, 2, 15)))
-	assert.Equal(-2, birthday.DiffInYears(end, date_util.YMD(1952, 2, 16)))
-	assert.Equal(0, birthday.DiffInYears(end, date_util.YMD(1951, 2, 14)))
-	assert.Equal(0, birthday.DiffInYears(end, date_util.YMD(1951, 1, 31)))
-	assert.Equal(0, birthday.DiffInYears(end, date_util.YMD(1950, 2, 16)))
-	assert.Equal(1, birthday.DiffInYears(end, date_util.YMD(1950, 2, 15)))
-	assert.Equal(3, birthday.DiffInYears(end, date_util.YMD(1948, 2, 15)))
+	assert.Equal(0, years.Diff(end, date_util.YMD(1951, 2, 15)))
+	assert.Equal(-1, years.Diff(end, date_util.YMD(1951, 2, 16)))
+	assert.Equal(-1, years.Diff(end, date_util.YMD(1951, 3, 1)))
+	assert.Equal(-1, years.Diff(end, date_util.YMD(1952, 2, 15)))
+	assert.Equal(-2, years.Diff(end, date_util.YMD(1952, 2, 16)))
+	assert.Equal(0, years.Diff(end, date_util.YMD(1951, 2, 14)))
+	assert.Equal(0, years.Diff(end, date_util.YMD(1951, 1, 31)))
+	assert.Equal(0, years.Diff(end, date_util.YMD(1950, 2, 16)))
+	assert.Equal(1, years.Diff(end, date_util.YMD(1950, 2, 15)))
+	assert.Equal(3, years.Diff(end, date_util.YMD(1948, 2, 15)))
 }
 
 func TestToString(t *testing.T) {
@@ -388,7 +394,7 @@ func TestRemindNone(t *testing.T) {
 	assert := asserts.New(t)
 	milestones := getMilestonesWithOptions(
 		nil,
-		[]birthday.Period{years},
+		[]birthday.Period{kYears},
 		date_util.YMD(2023, 1, 20),
 		4000)
 	assert.Empty(milestones)
@@ -400,7 +406,7 @@ func TestRemindNone(t *testing.T) {
 	assert.Empty(milestones)
 	milestones = getMilestonesWithOptions(
 		[]birthday.Entry{{Birthday: date_util.YMD(0, 1, 20)}},
-		[]birthday.Period{thousandDays},
+		[]birthday.Period{kThousandDays},
 		date_util.YMD(2023, 1, 20),
 		4000)
 	assert.Empty(milestones)
@@ -420,7 +426,7 @@ func TestRemindNoYears(t *testing.T) {
 				Birthday: date_util.YMD(0, 2, 29),
 			},
 		},
-		[]birthday.Period{thousandDays},
+		[]birthday.Period{kThousandDays},
 		currentDate,
 		500)
 	assert.Equal(
@@ -445,7 +451,7 @@ func TestRemindWithEverything(t *testing.T) {
 			},
 		},
 		[]birthday.Period{
-			years, hundredMonths, hundredWeeks, thousandDays, sixMonths},
+			kYears, kHundredMonths, kHundredWeeks, kThousandDays, kSixMonths},
 		currentDate,
 		1001)
 	assert.Equal([]testMilestone{
@@ -528,7 +534,7 @@ func TestRemindWithWeeks(t *testing.T) {
 				Birthday: date_util.YMD(1968, 2, 29),
 			},
 		},
-		[]birthday.Period{hundredWeeks},
+		[]birthday.Period{kHundredWeeks},
 		currentDate,
 		701)
 	assert.Equal([]testMilestone{
@@ -561,7 +567,7 @@ func TestRemind(t *testing.T) {
 				Birthday: date_util.YMD(0, 2, 29),
 			},
 		},
-		[]birthday.Period{years, thousandDays},
+		[]birthday.Period{kYears, kThousandDays},
 		currentDate,
 		500)
 	assert.Equal(
@@ -607,7 +613,7 @@ func TestRemindHalfYear(t *testing.T) {
 				Birthday: date_util.YMD(1984, 3, 27),
 			},
 		},
-		[]birthday.Period{years, sixMonths},
+		[]birthday.Period{kYears, kSixMonths},
 		currentDate,
 		300)
 	assert.Equal(
@@ -645,7 +651,7 @@ func TestRemindAgain(t *testing.T) {
 	currentDate := date_util.YMD(2023, 1, 20)
 	milestones := getMilestonesWithOptions(
 		[]birthday.Entry{{Name: "Matt", Birthday: date_util.YMD(1952, 2, 29)}},
-		[]birthday.Period{years, thousandDays},
+		[]birthday.Period{kYears, kThousandDays},
 		currentDate,
 		406)
 	assert.Equal(
@@ -765,7 +771,7 @@ func getMilestones(
 	currentDate, b time.Time, daysAhead int) []testMilestone {
 	return getMilestonesWithOptions(
 		[]birthday.Entry{{Birthday: b}},
-		[]birthday.Period{years, thousandDays},
+		[]birthday.Period{kYears, kThousandDays},
 		currentDate,
 		daysAhead)
 }
