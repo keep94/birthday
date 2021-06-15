@@ -47,8 +47,9 @@ func ToString(t time.Time) string {
 	return t.Format("01/02/2006")
 }
 
-// ToStringWithWeekday works like ToString but adds weekday.
-// ToStringWithWeekday panics if t falls before 1 Jan 0001.
+// ToStringWithWeekDay works like ToString but adds weekday.
+// ToStringWithWeekDay returns a string such as 'Mon 01/02/2006'.
+// ToStringWithWeekDay panics if t falls before 1 Jan 0001.
 func ToStringWithWeekDay(t time.Time) string {
 	if !HasYear(t) {
 		panic("no year")
