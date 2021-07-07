@@ -96,7 +96,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http_util.WriteTemplate(w, kTemplate, &view{
-		Values:      http_util.Values{r.Form},
+		Values:      http_util.Values{Values: r.Form},
 		Results:     birthday.EntriesSortedByName(entries),
 		CurrentDate: common.ParseDate(r.Form.Get("date")),
 	})
