@@ -324,19 +324,36 @@ func Remind(
 
 func createMilestoneHeap(
 	entries []Entry, periods []Period, current time.Time) milestoneHeap {
-	var result milestoneHeap
+	size := 0
 	for i := range entries {
 		hasYear := HasYear(entries[i].Birthday)
 		for j := range periods {
 			if hasYear || periods[j] == yearly {
-				result = append(
-					result,
-					createMilestoneGenerator(
-						&entries[i], periods[j], current))
+				size++
+			}
+		}
+	}
+	result := allocateSpaceForMilestoneHeap(size)
+	index := 0
+	for i := range entries {
+		hasYear := HasYear(entries[i].Birthday)
+		for j := range periods {
+			if hasYear || periods[j] == yearly {
+				result[index].Init(&entries[i], periods[j], current)
+				index++
 			}
 		}
 	}
 	heap.Init(&result)
+	return result
+}
+
+func allocateSpaceForMilestoneHeap(size int) milestoneHeap {
+	allocatedSpace := make([]milestoneGenerator, size)
+	result := make(milestoneHeap, size)
+	for i := range result {
+		result[i] = &allocatedSpace[i]
+	}
 	return result
 }
 
@@ -345,12 +362,10 @@ type milestoneGenerator struct {
 	Milestone Milestone
 }
 
-func createMilestoneGenerator(
-	entry *Entry, period Period, current time.Time) *milestoneGenerator {
-	var result milestoneGenerator
-	result.Generator.Init(entry, period, current)
-	result.Advance(current)
-	return &result
+func (gm *milestoneGenerator) Init(
+	entry *Entry, period Period, current time.Time) {
+	gm.Generator.Init(entry, period, current)
+	gm.Advance(current)
 }
 
 func (gm *milestoneGenerator) Advance(current time.Time) {
