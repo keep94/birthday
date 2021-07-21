@@ -226,13 +226,13 @@ func (p *Period) normalize() {
 }
 
 func (p *Period) normalizeMonths() {
-	monthsOver12 := floorDiv(p.Months, 12)
+	monthsOver12 := p.Months / 12
 	p.Years += monthsOver12
 	p.Months -= 12 * monthsOver12
 }
 
 func (p *Period) normalizeDays() {
-	daysOver7 := floorDiv(p.Days, 7)
+	daysOver7 := p.Days / 7
 	p.Weeks += daysOver7
 	p.Days -= 7 * daysOver7
 }
@@ -431,17 +431,6 @@ func (m *milestoneHeap) Pop() interface{} {
 	x := old[n-1]
 	*m = old[0 : n-1]
 	return x
-}
-
-func floorDiv(x, positiveY int) int {
-	if positiveY <= 0 {
-		panic("positiveY must be positive")
-	}
-	result := x / positiveY
-	if x%positiveY < 0 {
-		result--
-	}
-	return result
 }
 
 func safeYMD(year, month, day int) (t time.Time, ok bool) {

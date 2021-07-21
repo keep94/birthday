@@ -209,10 +209,16 @@ func TestDiffPanics(t *testing.T) {
 
 func TestPeriodMultiply(t *testing.T) {
 	assert := asserts.New(t)
-	p := birthday.Period{Days: 5, Normalize: true}
-	assert.Equal(birthday.Period{Weeks: 4, Days: 2}, p.Multiply(6))
-	p = birthday.Period{Days: 5}
+	p := birthday.Period{Days: 5}
 	assert.Equal(birthday.Period{Days: 30}, p.Multiply(6))
+	p = birthday.Period{Days: 5, Normalize: true}
+	assert.Equal(birthday.Period{Weeks: 4, Days: 2}, p.Multiply(6))
+	assert.Equal(birthday.Period{Weeks: -4, Days: -2}, p.Multiply(-6))
+	p = birthday.Period{Months: 7}
+	assert.Equal(birthday.Period{Months: -35}, p.Multiply(-5))
+	p = birthday.Period{Months: 5, Normalize: true}
+	assert.Equal(birthday.Period{Years: 1, Months: 3}, p.Multiply(3))
+	assert.Equal(birthday.Period{Years: -1, Months: -3}, p.Multiply(-3))
 }
 
 func TestMilestonesBirthdayNextYear(t *testing.T) {
