@@ -735,6 +735,35 @@ func TestEntriesSortedByName(t *testing.T) {
 	)
 }
 
+// Verify that Remind emits the correct Milestones even if the consumer
+// modifies the emitted Milestones.
+func TestRemindMisbehavedConsumer(t *testing.T) {
+	assert := asserts.New(t)
+	milestonesConsumed := 0
+	misbehavedConsumer := consume.TakeWhile(
+		consume.ConsumerFunc(func(ptr interface{}) {
+			milestonesConsumed++
+			p := ptr.(*birthday.Milestone)
+
+			// Misbehave by modifying passed Milestone to try to trick Remind
+			// into thinking it is farther along than it really is
+			p.DaysAway += 1000
+		}),
+		func(p *birthday.Milestone) bool {
+			return p.DaysAway < 1000
+		},
+	)
+	birthday.Remind(
+		[]birthday.Entry{{Birthday: date_util.YMD(1970, 9, 10)}},
+		[]birthday.Period{kYears},
+		date_util.YMD(2021, 9, 10),
+		misbehavedConsumer,
+	)
+
+	// Today, 1 year ahead, 2 years ahead
+	assert.Equal(3, milestonesConsumed)
+}
+
 type testMilestone struct {
 	Name       string
 	Date       time.Time

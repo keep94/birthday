@@ -313,11 +313,11 @@ func Remind(
 	}
 	milestone := mh[0].Milestone
 	for consumer.CanConsume() {
-		consumer.Consume(&milestone)
 		for !milestone.Less(&mh[0].Milestone) {
 			mh[0].Advance(current)
 			heap.Fix(&mh, 0)
 		}
+		consumer.Consume(&milestone)
 		milestone = mh[0].Milestone
 	}
 }
