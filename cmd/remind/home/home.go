@@ -70,27 +70,31 @@ type Handler struct {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var entries []birthday.Entry
+	cf := consume.AppendToSaveMemory(&entries)
 	err := birthday.ReadFile(
 		h.File,
 		consume.MapFilter(
-			consume.AppendTo(&entries), birthday.Query(r.Form.Get("q"))))
+			cf, birthday.EntryFilterer(birthday.Query(r.Form.Get("q")))))
+	cf.Finalize()
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
 	}
 	daysAhead := h.parseDays(r.Form.Get("days"))
 	var milestones []birthday.Milestone
+	cf = consume.AppendToSaveMemory(&milestones)
 	birthday.Remind(
 		entries,
 		birthday.DefaultPeriods,
 		common.ParseDate(r.Form.Get("date")),
 		consume.TakeWhile(
-			consume.Slice(consume.AppendTo(&milestones), 0, kMaxMilestones),
-			func(m *birthday.Milestone) bool {
+			consume.Slice(cf, 0, kMaxMilestones),
+			birthday.MilestoneFilterer(func(m *birthday.Milestone) bool {
 				return m.DaysAway < daysAhead
-			},
+			}),
 		),
 	)
+	cf.Finalize()
 	http_util.WriteTemplate(w, kTemplate, &view{Milestones: milestones})
 }
 

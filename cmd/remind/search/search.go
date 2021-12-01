@@ -87,10 +87,12 @@ type Handler struct {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var entries []birthday.Entry
+	cf := consume.AppendToSaveMemory(&entries)
 	err := birthday.ReadFile(
 		h.File,
 		consume.MapFilter(
-			consume.AppendTo(&entries), birthday.Query(r.Form.Get("q"))))
+			cf, birthday.EntryFilterer(birthday.Query(r.Form.Get("q")))))
+	cf.Finalize()
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return

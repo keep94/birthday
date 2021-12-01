@@ -47,9 +47,9 @@ func main() {
 		birthday.Today(),
 		consume.TakeWhile(
 			consumer,
-			func(m *birthday.Milestone) bool {
+			birthday.MilestoneFilterer(func(m *birthday.Milestone) bool {
 				return m.DaysAway < fDaysAhead
-			},
+			}),
 		),
 	)
 }

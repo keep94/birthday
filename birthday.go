@@ -292,6 +292,9 @@ func (m *Milestone) AgeString() string {
 // to it matches query.
 func Query(query string) func(entry *Entry) bool {
 	query = str_util.Normalize(query)
+	if query == "" {
+		return alwaysTrue
+	}
 	return func(entry *Entry) bool {
 		return strings.Contains(str_util.Normalize(entry.Name), query)
 	}
@@ -458,4 +461,8 @@ func checkPeriods(periods []Period) {
 			panic(kInvalidPeriod)
 		}
 	}
+}
+
+func alwaysTrue(entry *Entry) bool {
+	return true
 }

@@ -697,6 +697,19 @@ func TestFilterNone(t *testing.T) {
 	}))
 }
 
+func TestFilterSpaces(t *testing.T) {
+	assert := asserts.New(t)
+	queryFunc := birthday.Query("   ")
+	assert.True(queryFunc(&birthday.Entry{
+		Name:     "Bob",
+		Birthday: date_util.YMD(0, 10, 15),
+	}))
+	assert.True(queryFunc(&birthday.Entry{
+		Name:     "Billy",
+		Birthday: date_util.YMD(1968, 11, 1),
+	}))
+}
+
 func TestFilterSome(t *testing.T) {
 	assert := asserts.New(t)
 	queryFunc := birthday.Query("jOHN  dOe")
