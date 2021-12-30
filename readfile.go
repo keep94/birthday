@@ -7,11 +7,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/keep94/consume"
+	"github.com/keep94/consume2"
 )
 
 // ReadFile reads a birthday file. consumer consumes Entry instances.
-func ReadFile(filename string, consumer consume.Consumer) error {
+func ReadFile(filename string, consumer consume2.Consumer[Entry]) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -21,12 +21,11 @@ func ReadFile(filename string, consumer consume.Consumer) error {
 }
 
 // Read reads a birthday file. consumer consumes Entry instances.
-func Read(r io.Reader, consumer consume.Consumer) error {
+func Read(r io.Reader, consumer consume2.Consumer[Entry]) error {
 	scanner := bufio.NewScanner(r)
 	lineNo := 0
-	var entry Entry
 	for scanner.Scan() && consumer.CanConsume() {
-		entry = Entry{}
+		var entry Entry
 		lineNo++
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
@@ -44,7 +43,7 @@ func Read(r io.Reader, consumer consume.Consumer) error {
 		if err != nil {
 			return fmt.Errorf("Line %d contains invalid birthday", lineNo)
 		}
-		consumer.Consume(&entry)
+		consumer.Consume(entry)
 	}
 	if err := scanner.Err(); err != nil {
 		return err

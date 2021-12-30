@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/keep94/birthday"
-	"github.com/keep94/consume"
+	"github.com/keep94/consume2"
 )
 
 var (
@@ -23,33 +23,33 @@ func main() {
 		os.Exit(1)
 	}
 	var entries []birthday.Entry
-	err := birthday.ReadFile(fFile, consume.AppendTo(&entries))
+	err := birthday.ReadFile(fFile, consume2.AppendTo(&entries))
 	if err != nil {
 		log.Fatal(err)
 	}
-	var consumer consume.Consumer
-	consumer = consume.ConsumerFunc(func(ptr interface{}) {
-		milestone := ptr.(*birthday.Milestone)
-		astricks := " "
-		if milestone.DaysAway == 0 {
-			astricks = "*"
-		}
-		fmt.Printf(
-			"%s %14s %20s %s\n",
-			astricks,
-			birthday.ToStringWithWeekDay(milestone.Date),
-			milestone.AgeString(),
-			milestone.Name)
-	})
+	var consumer consume2.Consumer[birthday.Milestone]
+	consumer = consume2.ConsumerFunc[birthday.Milestone](
+		func(milestone birthday.Milestone) {
+			astricks := " "
+			if milestone.DaysAway == 0 {
+				astricks = "*"
+			}
+			fmt.Printf(
+				"%s %14s %20s %s\n",
+				astricks,
+				birthday.ToStringWithWeekDay(milestone.Date),
+				milestone.AgeString(),
+				milestone.Name)
+		})
 	birthday.Remind(
 		entries,
 		birthday.DefaultPeriods,
 		birthday.Today(),
-		consume.TakeWhile(
+		consume2.TakeWhile(
 			consumer,
-			birthday.MilestoneFilterer(func(m *birthday.Milestone) bool {
+			func(m birthday.Milestone) bool {
 				return m.DaysAway < fDaysAhead
-			}),
+			},
 		),
 	)
 }

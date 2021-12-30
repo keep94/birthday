@@ -9,7 +9,7 @@ import (
 
 	"github.com/keep94/birthday"
 	"github.com/keep94/birthday/cmd/remind/common"
-	"github.com/keep94/consume"
+	"github.com/keep94/consume2"
 	"github.com/keep94/toolbox/http_util"
 )
 
@@ -87,12 +87,11 @@ type Handler struct {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var entries []birthday.Entry
-	cf := consume.AppendToSaveMemory(&entries)
 	err := birthday.ReadFile(
 		h.File,
-		consume.MapFilter(
-			cf, birthday.EntryFilterer(birthday.Query(r.Form.Get("q")))))
-	cf.Finalize()
+		consume2.Filter(
+			consume2.AppendTo(&entries),
+			birthday.Query(r.Form.Get("q"))))
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return

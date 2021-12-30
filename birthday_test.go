@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/keep94/birthday"
-	"github.com/keep94/consume"
+	"github.com/keep94/consume2"
 	"github.com/keep94/toolbox/date_util"
 	asserts "github.com/stretchr/testify/assert"
 )
@@ -687,11 +687,11 @@ func TestRemindAgain(t *testing.T) {
 func TestFilterNone(t *testing.T) {
 	assert := asserts.New(t)
 	queryFunc := birthday.Query("")
-	assert.True(queryFunc(&birthday.Entry{
+	assert.True(queryFunc(birthday.Entry{
 		Name:     "Bob",
 		Birthday: date_util.YMD(0, 10, 15),
 	}))
-	assert.True(queryFunc(&birthday.Entry{
+	assert.True(queryFunc(birthday.Entry{
 		Name:     "Billy",
 		Birthday: date_util.YMD(1968, 11, 1),
 	}))
@@ -700,11 +700,11 @@ func TestFilterNone(t *testing.T) {
 func TestFilterSpaces(t *testing.T) {
 	assert := asserts.New(t)
 	queryFunc := birthday.Query("   ")
-	assert.True(queryFunc(&birthday.Entry{
+	assert.True(queryFunc(birthday.Entry{
 		Name:     "Bob",
 		Birthday: date_util.YMD(0, 10, 15),
 	}))
-	assert.True(queryFunc(&birthday.Entry{
+	assert.True(queryFunc(birthday.Entry{
 		Name:     "Billy",
 		Birthday: date_util.YMD(1968, 11, 1),
 	}))
@@ -713,11 +713,11 @@ func TestFilterSpaces(t *testing.T) {
 func TestFilterSome(t *testing.T) {
 	assert := asserts.New(t)
 	queryFunc := birthday.Query("jOHN  dOe")
-	assert.True(queryFunc(&birthday.Entry{
+	assert.True(queryFunc(birthday.Entry{
 		Name:     "John Doe",
 		Birthday: date_util.YMD(2019, 10, 15),
 	}))
-	assert.False(queryFunc(&birthday.Entry{
+	assert.False(queryFunc(birthday.Entry{
 		Name:     "Billy",
 		Birthday: date_util.YMD(1968, 11, 1),
 	}))
@@ -748,35 +748,6 @@ func TestEntriesSortedByName(t *testing.T) {
 	)
 }
 
-// Verify that Remind emits the correct Milestones even if the consumer
-// modifies the emitted Milestones.
-func TestRemindMisbehavedConsumer(t *testing.T) {
-	assert := asserts.New(t)
-	milestonesConsumed := 0
-	misbehavedConsumer := consume.TakeWhile(
-		consume.ConsumerFunc(func(ptr interface{}) {
-			milestonesConsumed++
-			p := ptr.(*birthday.Milestone)
-
-			// Misbehave by modifying passed Milestone to try to trick Remind
-			// into thinking it is farther along than it really is
-			p.DaysAway += 1000
-		}),
-		func(p *birthday.Milestone) bool {
-			return p.DaysAway < 1000
-		},
-	)
-	birthday.Remind(
-		[]birthday.Entry{{Birthday: date_util.YMD(1970, 9, 10)}},
-		[]birthday.Period{kYears},
-		date_util.YMD(2021, 9, 10),
-		misbehavedConsumer,
-	)
-
-	// Today, 1 year ahead, 2 years ahead
-	assert.Equal(3, milestonesConsumed)
-}
-
 type testMilestone struct {
 	Name       string
 	Date       time.Time
@@ -785,15 +756,14 @@ type testMilestone struct {
 	AgeUnknown bool
 }
 
-func toTestMilestone(src *birthday.Milestone, dest *testMilestone) bool {
-	*dest = testMilestone{
-		Name:       src.Name,
-		Date:       src.Date,
-		DaysAway:   src.DaysAway,
-		Age:        src.Age,
-		AgeUnknown: src.AgeUnknown,
+func toTestMilestone(milestone birthday.Milestone) testMilestone {
+	return testMilestone{
+		Name:       milestone.Name,
+		Date:       milestone.Date,
+		DaysAway:   milestone.DaysAway,
+		Age:        milestone.Age,
+		AgeUnknown: milestone.AgeUnknown,
 	}
-	return true
 }
 
 func getMilestonesWithOptions(
@@ -806,10 +776,9 @@ func getMilestonesWithOptions(
 		entries,
 		periods,
 		currentDate,
-		consume.TakeWhile(
-			consume.AppendTo(&result),
-			func(m *birthday.Milestone) bool { return m.DaysAway < daysAhead },
-			toTestMilestone,
+		consume2.TakeWhile(
+			consume2.Map(consume2.AppendTo(&result), toTestMilestone),
+			func(m birthday.Milestone) bool { return m.DaysAway < daysAhead },
 		),
 	)
 	return result

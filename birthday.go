@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/keep94/consume"
+	"github.com/keep94/consume2"
 	"github.com/keep94/toolbox/date_util"
 	"github.com/keep94/toolbox/str_util"
 )
@@ -290,12 +290,12 @@ func (m *Milestone) AgeString() string {
 
 // Query returns a function that returns true if the Entry instance passed
 // to it matches query.
-func Query(query string) func(entry *Entry) bool {
+func Query(query string) func(entry Entry) bool {
 	query = str_util.Normalize(query)
 	if query == "" {
-		return alwaysTrue
+		return consume2.ComposeFilters[Entry]()
 	}
-	return func(entry *Entry) bool {
+	return func(entry Entry) bool {
 		return strings.Contains(str_util.Normalize(entry.Name), query)
 	}
 }
@@ -308,7 +308,7 @@ func Remind(
 	entries []Entry,
 	periods []Period,
 	current time.Time,
-	consumer consume.Consumer) {
+	consumer consume2.Consumer[Milestone]) {
 	checkPeriods(periods)
 	mh := createMilestoneHeap(entries, periods, current)
 	if len(mh) == 0 {
@@ -320,7 +320,7 @@ func Remind(
 			mh[0].Advance(current)
 			heap.Fix(&mh, 0)
 		}
-		consumer.Consume(&milestone)
+		consumer.Consume(milestone)
 		milestone = mh[0].Milestone
 	}
 }
@@ -461,8 +461,4 @@ func checkPeriods(periods []Period) {
 			panic(kInvalidPeriod)
 		}
 	}
-}
-
-func alwaysTrue(entry *Entry) bool {
-	return true
 }

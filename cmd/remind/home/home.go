@@ -8,7 +8,7 @@ import (
 
 	"github.com/keep94/birthday"
 	"github.com/keep94/birthday/cmd/remind/common"
-	"github.com/keep94/consume"
+	"github.com/keep94/consume2"
 	"github.com/keep94/toolbox/http_util"
 )
 
@@ -70,31 +70,29 @@ type Handler struct {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var entries []birthday.Entry
-	cf := consume.AppendToSaveMemory(&entries)
 	err := birthday.ReadFile(
 		h.File,
-		consume.MapFilter(
-			cf, birthday.EntryFilterer(birthday.Query(r.Form.Get("q")))))
-	cf.Finalize()
+		consume2.Filter(
+			consume2.AppendTo(&entries),
+			birthday.Query(r.Form.Get("q"))))
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
 	}
 	daysAhead := h.parseDays(r.Form.Get("days"))
 	var milestones []birthday.Milestone
-	cf = consume.AppendToSaveMemory(&milestones)
 	birthday.Remind(
 		entries,
 		birthday.DefaultPeriods,
 		common.ParseDate(r.Form.Get("date")),
-		consume.TakeWhile(
-			consume.Slice(cf, 0, kMaxMilestones),
-			birthday.MilestoneFilterer(func(m *birthday.Milestone) bool {
+		consume2.TakeWhile(
+			consume2.Slice(
+				consume2.AppendTo(&milestones), 0, kMaxMilestones),
+			func(m birthday.Milestone) bool {
 				return m.DaysAway < daysAhead
-			}),
+			},
 		),
 	)
-	cf.Finalize()
 	http_util.WriteTemplate(w, kTemplate, &view{Milestones: milestones})
 }
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/keep94/birthday"
-	"github.com/keep94/consume"
+	"github.com/keep94/consume2"
 	"github.com/keep94/toolbox/date_util"
 	asserts "github.com/stretchr/testify/assert"
 )
@@ -20,7 +20,7 @@ Jack Sprat
 `
 	var entries []birthday.Entry
 	err := birthday.Read(
-		strings.NewReader(fileContents), consume.AppendTo(&entries))
+		strings.NewReader(fileContents), consume2.AppendTo(&entries))
 	assert.EqualError(err, "Line 4 malformatted")
 }
 
@@ -34,7 +34,7 @@ Jack Sprat	08/32/2006
 `
 	var entries []birthday.Entry
 	err := birthday.Read(
-		strings.NewReader(fileContents), consume.AppendTo(&entries))
+		strings.NewReader(fileContents), consume2.AppendTo(&entries))
 	assert.EqualError(err, "Line 4 contains invalid birthday")
 }
 
@@ -48,7 +48,7 @@ Jack Sprat	08/32
 `
 	var entries []birthday.Entry
 	err := birthday.Read(
-		strings.NewReader(fileContents), consume.AppendTo(&entries))
+		strings.NewReader(fileContents), consume2.AppendTo(&entries))
 	assert.EqualError(err, "Line 4 contains invalid birthday")
 }
 
@@ -63,7 +63,7 @@ Alice Doe	12/15
 `
 	var entries []birthday.Entry
 	err := birthday.Read(
-		strings.NewReader(fileContents), consume.AppendTo(&entries))
+		strings.NewReader(fileContents), consume2.AppendTo(&entries))
 	assert.NoError(err)
 	assert.Equal([]birthday.Entry{
 		{
@@ -89,7 +89,7 @@ Alice Doe	12/15
 	var entries []birthday.Entry
 	err := birthday.Read(
 		strings.NewReader(fileContents),
-		consume.Slice(consume.AppendTo(&entries), 0, 1))
+		consume2.Slice(consume2.AppendTo(&entries), 0, 1))
 	assert.NoError(err)
 	assert.Equal([]birthday.Entry{
 		{
@@ -110,7 +110,7 @@ func TestReadLinesWithWhitespace(t *testing.T) {
 `
 	var entries []birthday.Entry
 	err := birthday.Read(
-		strings.NewReader(fileContents), consume.AppendTo(&entries))
+		strings.NewReader(fileContents), consume2.AppendTo(&entries))
 	assert.NoError(err)
 	assert.Equal([]birthday.Entry{
 		{
