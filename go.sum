@@ -2,10 +2,10 @@ github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
-github.com/keep94/consume2 v0.2.0 h1:g0ORmYIWwCLYvJbrTd8EokH3CfTINe7EF103cpPTdhI=
-github.com/keep94/consume2 v0.2.0/go.mod h1:oI2GS5jRbaWtXBO3wLiqr+dHpNmEyOgAJd4C1Jxp9o0=
-github.com/keep94/toolbox v0.7.0 h1:yBn1pjvnyh3fkRz4jyjt1hMfFSLkqwDv8HUfA9j8sBs=
-github.com/keep94/toolbox v0.7.0/go.mod h1:+9Qx39C6ddkn5u+KmvUp+MCkGTqBqUcSm4bVX9fBInk=
+github.com/keep94/consume2 v0.3.0 h1:qMn8mbL1TGJULJcldeiT2SKDMuOTYu3oj1pvbublcts=
+github.com/keep94/consume2 v0.3.0/go.mod h1:oI2GS5jRbaWtXBO3wLiqr+dHpNmEyOgAJd4C1Jxp9o0=
+github.com/keep94/toolbox v0.7.1 h1:T1siP7NGtugbMRyhF4po5uSviJ2LtQ5XuJqaNGnROJ8=
+github.com/keep94/toolbox v0.7.1/go.mod h1:Qn21KOssa6DYY7Ft7tckblK4jkOl4R08ELb0PDkdJT0=
 github.com/keep94/weblogs v1.0.0 h1:YTmyjV2rF4Bhl6rMGkoe4mIdHPNKjAkMMZ670bhkK+Q=
 github.com/keep94/weblogs v1.0.0/go.mod h1:OoIYchSf6QRvBwDLK8+PNbR8EAXwwITG7wIxKH3+AOM=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
