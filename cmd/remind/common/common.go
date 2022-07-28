@@ -2,6 +2,7 @@ package common
 
 import (
 	"html/template"
+	"strings"
 	"time"
 
 	"github.com/keep94/birthday"
@@ -32,4 +33,32 @@ func fixMissingYear(date time.Time) time.Time {
 	}
 	today := birthday.Today()
 	return date_util.YMD(today.Year(), int(date.Month()), date.Day())
+}
+
+// ParsePeriods parses a periodStr of form 'ymwdh' into a slice of periods.
+// y stands for year; m stands for 100 months; w stands for 100 weeks;
+// d stands for 1000 days; h stands for half-year. If periodStr is empty,
+// ParsePeriods returns birthday.DefaultPeriods. periodStr can be any
+// subset of 'ymwdh'
+func ParsePeriods(periodStr string) []birthday.Period {
+	if periodStr == "" {
+		return birthday.DefaultPeriods
+	}
+	var result []birthday.Period
+	if strings.Contains(periodStr, "y") {
+		result = append(result, birthday.Period{Years: 1})
+	}
+	if strings.Contains(periodStr, "m") {
+		result = append(result, birthday.Period{Months: 100})
+	}
+	if strings.Contains(periodStr, "w") {
+		result = append(result, birthday.Period{Weeks: 100})
+	}
+	if strings.Contains(periodStr, "d") {
+		result = append(result, birthday.Period{Days: 1000})
+	}
+	if strings.Contains(periodStr, "h") {
+		result = append(result, birthday.Period{Months: 6, Normalize: true})
+	}
+	return result
 }

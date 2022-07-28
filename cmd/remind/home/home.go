@@ -83,7 +83,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var milestones []birthday.Milestone
 	birthday.Remind(
 		entries,
-		birthday.DefaultPeriods,
+		common.ParsePeriods(r.Form.Get("p")),
 		common.ParseDate(r.Form.Get("date")),
 		consume2.TakeWhile(
 			consume2.Slice(
