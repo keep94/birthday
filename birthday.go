@@ -20,13 +20,12 @@ const (
 )
 
 var (
-	// Currently yearly, 100 months, 100 weeks, 1000 days, and 6 months.
+	// Currently yearly, 100 months, 100 weeks, 1000 days.
 	DefaultPeriods = []Period{
 		{Years: 1},
 		{Months: 100},
 		{Weeks: 100},
 		{Days: 1000},
-		{Months: 6, Normalize: true},
 	}
 )
 
