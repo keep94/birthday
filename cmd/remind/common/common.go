@@ -41,10 +41,12 @@ func fixMissingYear(date time.Time) time.Time {
 // ParsePeriods returns birthday.DefaultPeriods. periodStr can be any
 // subset of 'ymwdh'
 func ParsePeriods(periodStr string) []birthday.Period {
-	if periodStr == "" {
-		return birthday.DefaultPeriods
-	}
 	var result []birthday.Period
+	if periodStr == "" {
+		result = make([]birthday.Period, len(birthday.DefaultPeriods))
+		copy(result, birthday.DefaultPeriods)
+		return result
+	}
 	if strings.Contains(periodStr, "y") {
 		result = append(result, birthday.Period{Years: 1})
 	}
