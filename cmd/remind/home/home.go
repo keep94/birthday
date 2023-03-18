@@ -80,18 +80,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	daysAhead := h.parseDays(r.Form.Get("days"))
+	pipeline := consume2.PTakeWhile(func(m birthday.Milestone) bool {
+		return m.DaysAway < daysAhead
+	})
+	pipeline = consume2.Join(
+		pipeline, consume2.PSlice[birthday.Milestone](0, kMaxMilestones))
 	var milestones []birthday.Milestone
 	birthday.Remind(
 		entries,
 		common.ParsePeriods(r.Form.Get("p")),
 		common.ParseDate(r.Form.Get("date")),
-		consume2.TakeWhile(
-			consume2.Slice(
-				consume2.AppendTo(&milestones), 0, kMaxMilestones),
-			func(m birthday.Milestone) bool {
-				return m.DaysAway < daysAhead
-			},
-		),
+		pipeline.AppendTo(&milestones),
 	)
 	http_util.WriteTemplate(w, kTemplate, &view{Milestones: milestones})
 }
