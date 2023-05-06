@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gorilla/context"
 	"github.com/keep94/birthday/cmd/remind/home"
 	"github.com/keep94/birthday/cmd/remind/search"
+	"github.com/keep94/context"
 	"github.com/keep94/toolbox/http_util"
 	"github.com/keep94/toolbox/logging"
 	"github.com/keep94/weblogs"

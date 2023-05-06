@@ -3,10 +3,10 @@ module github.com/keep94/birthday
 go 1.18
 
 require (
-	github.com/gorilla/context v1.1.1
-	github.com/keep94/consume2 v0.3.0
-	github.com/keep94/toolbox v0.7.1
-	github.com/keep94/weblogs v1.0.0
+	github.com/keep94/consume2 v0.6.0
+	github.com/keep94/context v0.1.0
+	github.com/keep94/toolbox v0.8.0
+	github.com/keep94/weblogs v1.0.1
 	github.com/stretchr/testify v1.7.0
 )
 
