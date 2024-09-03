@@ -48,7 +48,7 @@ var (
     {{range .Milestones}}
     <tr>
       <td {{if $top.Today .}}class="today"{{end}}>{{$top.DateStr .}}</td>
-      <td {{if $top.Today .}}class="today"{{end}}>{{.Name}}</td>
+      <td {{if $top.Today .}}class="today"{{end}}>{{.EntryPtr.Name}}</td>
       <td {{if $top.Today .}}class="today"{{end}}>{{.AgeString}}</td>
     </tr>
     {{end}}
@@ -69,11 +69,11 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var entries []birthday.Entry
+	var entries []*birthday.Entry
 	err := birthday.ReadFile(
 		h.File,
 		consume2.Filter(
-			consume2.AppendTo(&entries),
+			consume2.AppendPtrsTo(&entries),
 			birthday.Query(r.Form.Get("q"))))
 	if err != nil {
 		fmt.Fprintln(w, err)

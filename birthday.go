@@ -105,8 +105,8 @@ type Entry struct {
 
 // EntriesSortedByName returns entries sorted by name while leaving the
 // original entries slice unchanged.
-func EntriesSortedByName(entries []Entry) []Entry {
-	result := make([]Entry, len(entries))
+func EntriesSortedByName(entries []*Entry) []*Entry {
+	result := make([]*Entry, len(entries))
 	copy(result, entries)
 	sort.SliceStable(
 		result,
@@ -240,7 +240,7 @@ func (p *Period) normalizeDays() {
 type Milestone struct {
 
 	// The person having the milestone
-	Entry
+	EntryPtr *Entry
 
 	// The date of the milestone day
 	Date time.Time
@@ -264,10 +264,10 @@ func (m *Milestone) Less(other *Milestone) bool {
 	if m.DaysAway > other.DaysAway {
 		return false
 	}
-	if m.Name < other.Name {
+	if m.EntryPtr.Name < other.EntryPtr.Name {
 		return true
 	}
-	if m.Name > other.Name {
+	if m.EntryPtr.Name > other.EntryPtr.Name {
 		return false
 	}
 	if !m.AgeUnknown && other.AgeUnknown {
@@ -304,7 +304,7 @@ func Query(query string) func(entry Entry) bool {
 // current. Remind sends Milestone instances to consumer in
 // chronological order.
 func Remind(
-	entries []Entry,
+	entries []*Entry,
 	periods []Period,
 	current time.Time,
 	consumer consume2.Consumer[Milestone]) {
@@ -325,7 +325,7 @@ func Remind(
 }
 
 func createMilestoneHeap(
-	entries []Entry, periods []Period, current time.Time) milestoneHeap {
+	entries []*Entry, periods []Period, current time.Time) milestoneHeap {
 	size := 0
 	for i := range entries {
 		hasYear := HasYear(entries[i].Birthday)
@@ -341,7 +341,7 @@ func createMilestoneHeap(
 		hasYear := HasYear(entries[i].Birthday)
 		for j := range periods {
 			if hasYear || periods[j] == yearly {
-				result[index].Init(&entries[i], periods[j], current)
+				result[index].Init(entries[i], periods[j], current)
 				index++
 			}
 		}
@@ -375,7 +375,7 @@ func (gm *milestoneGenerator) Advance(current time.Time) {
 }
 
 type generator struct {
-	entry  Entry
+	entry  *Entry
 	period Period
 	count  int
 }
@@ -387,7 +387,7 @@ func (g *generator) Init(
 	if count < 0 {
 		count = 0
 	}
-	*g = generator{entry: *entry, period: period, count: count}
+	*g = generator{entry: entry, period: period, count: count}
 }
 
 func (g *generator) Next(current time.Time) Milestone {
@@ -398,7 +398,7 @@ func (g *generator) Next(current time.Time) Milestone {
 	}
 	nextMilestone := g.period.Add(g.entry.Birthday, g.count)
 	result := Milestone{
-		Entry:      g.entry,
+		EntryPtr:   g.entry,
 		Date:       nextMilestone,
 		DaysAway:   asDays(nextMilestone) - asDays(current),
 		Age:        age,

@@ -86,11 +86,11 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	var entries []birthday.Entry
+	var entries []*birthday.Entry
 	err := birthday.ReadFile(
 		h.File,
 		consume2.Filter(
-			consume2.AppendTo(&entries),
+			consume2.AppendPtrsTo(&entries),
 			birthday.Query(r.Form.Get("q"))))
 	if err != nil {
 		fmt.Fprintln(w, err)
@@ -105,7 +105,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 type view struct {
 	http_util.Values
-	Results     []birthday.Entry
+	Results     []*birthday.Entry
 	CurrentDate time.Time
 }
 

@@ -135,8 +135,8 @@ func TestMilestoneAgeString(t *testing.T) {
 
 func TestMilestoneLess(t *testing.T) {
 	assert := asserts.New(t)
-	lhs := birthday.Milestone{}
-	rhs := birthday.Milestone{AgeUnknown: true}
+	lhs := birthday.Milestone{EntryPtr: &birthday.Entry{}}
+	rhs := birthday.Milestone{EntryPtr: &birthday.Entry{}, AgeUnknown: true}
 	assert.True(lhs.Less(&rhs))
 	assert.False(rhs.Less(&lhs))
 }
@@ -405,13 +405,13 @@ func TestRemindNone(t *testing.T) {
 		4000)
 	assert.Empty(milestones)
 	milestones = getMilestonesWithOptions(
-		[]birthday.Entry{{Birthday: date_util.YMD(1996, 1, 20)}},
+		[]*birthday.Entry{{Birthday: date_util.YMD(1996, 1, 20)}},
 		nil,
 		date_util.YMD(2023, 1, 20),
 		4000)
 	assert.Empty(milestones)
 	milestones = getMilestonesWithOptions(
-		[]birthday.Entry{{Birthday: date_util.YMD(0, 1, 20)}},
+		[]*birthday.Entry{{Birthday: date_util.YMD(0, 1, 20)}},
 		[]birthday.Period{kThousandDays},
 		date_util.YMD(2023, 1, 20),
 		4000)
@@ -422,7 +422,7 @@ func TestRemindNoYears(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2023, 1, 20)
 	milestones := getMilestonesWithOptions(
-		[]birthday.Entry{
+		[]*birthday.Entry{
 			{
 				Name:     "Mark",
 				Birthday: date_util.YMD(2023, 1, 20),
@@ -450,7 +450,7 @@ func TestRemindWithEverything(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2017, 6, 11)
 	milestones := getMilestonesWithOptions(
-		[]birthday.Entry{
+		[]*birthday.Entry{
 			{
 				Name:     "Mark",
 				Birthday: date_util.YMD(1968, 2, 29),
@@ -534,7 +534,7 @@ func TestRemindWithWeeks(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2017, 12, 28)
 	milestones := getMilestonesWithOptions(
-		[]birthday.Entry{
+		[]*birthday.Entry{
 			{
 				Name:     "Mark",
 				Birthday: date_util.YMD(1968, 2, 29),
@@ -563,7 +563,7 @@ func TestRemind(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2023, 1, 20)
 	milestones := getMilestonesWithOptions(
-		[]birthday.Entry{
+		[]*birthday.Entry{
 			{
 				Name:     "Mark",
 				Birthday: date_util.YMD(2023, 1, 20),
@@ -609,7 +609,7 @@ func TestRemindHalfYear(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2021, 3, 20)
 	milestones := getMilestonesWithOptions(
-		[]birthday.Entry{
+		[]*birthday.Entry{
 			{
 				Name:     "Mark",
 				Birthday: date_util.YMD(1985, 3, 27),
@@ -656,7 +656,7 @@ func TestRemindAgain(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2023, 1, 20)
 	milestones := getMilestonesWithOptions(
-		[]birthday.Entry{{Name: "Matt", Birthday: date_util.YMD(1952, 2, 29)}},
+		[]*birthday.Entry{{Name: "Matt", Birthday: date_util.YMD(1952, 2, 29)}},
 		[]birthday.Period{kYears, kThousandDays},
 		currentDate,
 		406)
@@ -725,13 +725,13 @@ func TestFilterSome(t *testing.T) {
 
 func TestEntriesSortedByName(t *testing.T) {
 	assert := asserts.New(t)
-	entries := []birthday.Entry{
+	entries := []*birthday.Entry{
 		{Name: "Steven"},
 		{Name: "George"},
 		{Name: "Mary"},
 	}
 	assert.Equal(
-		[]birthday.Entry{
+		[]*birthday.Entry{
 			{Name: "George"},
 			{Name: "Mary"},
 			{Name: "Steven"},
@@ -739,7 +739,7 @@ func TestEntriesSortedByName(t *testing.T) {
 		birthday.EntriesSortedByName(entries),
 	)
 	assert.Equal(
-		[]birthday.Entry{
+		[]*birthday.Entry{
 			{Name: "Steven"},
 			{Name: "George"},
 			{Name: "Mary"},
@@ -758,7 +758,7 @@ type testMilestone struct {
 
 func toTestMilestone(milestone birthday.Milestone) testMilestone {
 	return testMilestone{
-		Name:       milestone.Name,
+		Name:       milestone.EntryPtr.Name,
 		Date:       milestone.Date,
 		DaysAway:   milestone.DaysAway,
 		Age:        milestone.Age,
@@ -767,7 +767,7 @@ func toTestMilestone(milestone birthday.Milestone) testMilestone {
 }
 
 func getMilestonesWithOptions(
-	entries []birthday.Entry,
+	entries []*birthday.Entry,
 	periods []birthday.Period,
 	currentDate time.Time,
 	daysAhead int) []testMilestone {
@@ -787,7 +787,7 @@ func getMilestonesWithOptions(
 func getMilestones(
 	currentDate, b time.Time, daysAhead int) []testMilestone {
 	return getMilestonesWithOptions(
-		[]birthday.Entry{{Birthday: b}},
+		[]*birthday.Entry{{Birthday: b}},
 		[]birthday.Period{kYears, kThousandDays},
 		currentDate,
 		daysAhead)

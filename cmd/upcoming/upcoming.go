@@ -22,8 +22,8 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	var entries []birthday.Entry
-	err := birthday.ReadFile(fFile, consume2.AppendTo(&entries))
+	var entries []*birthday.Entry
+	err := birthday.ReadFile(fFile, consume2.AppendPtrsTo(&entries))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func main() {
 				astricks,
 				birthday.ToStringWithWeekDay(milestone.Date),
 				milestone.AgeString(),
-				milestone.Name)
+				milestone.EntryPtr.Name)
 		})
 	birthday.Remind(
 		entries,
