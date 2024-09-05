@@ -15,6 +15,10 @@ var (
 	fDaysAhead int
 )
 
+var (
+	kFirst100 = consume2.PSlice[birthday.Milestone](0, 100)
+)
+
 func main() {
 	flag.Parse()
 	if fFile == "" {
@@ -30,6 +34,7 @@ func main() {
 	pipeline := consume2.PTakeWhile(func(m birthday.Milestone) bool {
 		return m.DaysAway < fDaysAhead
 	})
+	pipeline = consume2.Join(pipeline, kFirst100)
 	birthday.Remind(
 		entries,
 		birthday.DefaultPeriods,

@@ -12,8 +12,8 @@ import (
 	"github.com/keep94/toolbox/http_util"
 )
 
-const (
-	kMaxMilestones = 100
+var (
+	kFirst100 = consume2.PSlice[birthday.Milestone](0, 100)
 )
 
 var (
@@ -83,8 +83,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	pipeline := consume2.PTakeWhile(func(m birthday.Milestone) bool {
 		return m.DaysAway < daysAhead
 	})
-	pipeline = consume2.Join(
-		pipeline, consume2.PSlice[birthday.Milestone](0, kMaxMilestones))
+	pipeline = consume2.Join(pipeline, kFirst100)
 	var milestones []birthday.Milestone
 	birthday.Remind(
 		entries,
