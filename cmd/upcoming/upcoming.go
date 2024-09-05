@@ -27,31 +27,28 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var consumer consume2.Consumer[birthday.Milestone]
-	consumer = consume2.ConsumerFunc[birthday.Milestone](
-		func(milestone birthday.Milestone) {
-			astricks := " "
-			if milestone.DaysAway == 0 {
-				astricks = "*"
-			}
-			fmt.Printf(
-				"%s %14s %20s %s\n",
-				astricks,
-				birthday.ToStringWithWeekDay(milestone.Date),
-				milestone.AgeString(),
-				milestone.EntryPtr.Name)
-		})
+	pipeline := consume2.PTakeWhile(func(m birthday.Milestone) bool {
+		return m.DaysAway < fDaysAhead
+	})
 	birthday.Remind(
 		entries,
 		birthday.DefaultPeriods,
 		birthday.Today(),
-		consume2.TakeWhile(
-			consumer,
-			func(m birthday.Milestone) bool {
-				return m.DaysAway < fDaysAhead
-			},
-		),
+		pipeline.Call(printMilestone),
 	)
+}
+
+func printMilestone(milestone birthday.Milestone) {
+	astricks := " "
+	if milestone.DaysAway == 0 {
+		astricks = "*"
+	}
+	fmt.Printf(
+		"%s %14s %20s %s\n",
+		astricks,
+		birthday.ToStringWithWeekDay(milestone.Date),
+		milestone.AgeString(),
+		milestone.EntryPtr.Name)
 }
 
 func init() {
