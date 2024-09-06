@@ -84,12 +84,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return m.DaysAway < daysAhead
 	})
 	pipeline = consume2.Join(pipeline, kFirst100)
-	var milestones []birthday.Milestone
+	var milestones []*birthday.Milestone
 	birthday.Remind(
 		entries,
 		common.ParsePeriods(r.Form.Get("p")),
 		common.ParseDate(r.Form.Get("date")),
-		pipeline.AppendTo(&milestones),
+		pipeline.Run(consume2.AppendPtrsTo(&milestones)),
 	)
 	http_util.WriteTemplate(w, kTemplate, &view{Milestones: milestones})
 }
@@ -103,7 +103,7 @@ func (h *Handler) parseDays(daysStr string) int {
 }
 
 type view struct {
-	Milestones []birthday.Milestone
+	Milestones []*birthday.Milestone
 }
 
 func (b *view) DateStr(milestone *birthday.Milestone) string {
