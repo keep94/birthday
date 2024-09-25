@@ -13,10 +13,6 @@ import (
 )
 
 var (
-	kFirst100 = consume2.PSlice[birthday.Milestone](0, 100)
-)
-
-var (
 	kTemplateSpec = `
 <html>
 <head>
@@ -65,6 +61,7 @@ var (
 type Handler struct {
 	File      string
 	DaysAhead int
+	FirstN    consume2.Pipeline[birthday.Milestone, birthday.Milestone]
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +80,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	pipeline := consume2.PTakeWhile(func(m birthday.Milestone) bool {
 		return m.DaysAway < daysAhead
 	})
-	pipeline = consume2.Join(pipeline, kFirst100)
+	pipeline = consume2.Join(pipeline, h.FirstN)
 	var milestones []*birthday.Milestone
 	birthday.Remind(
 		entries,
