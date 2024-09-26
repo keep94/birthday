@@ -10,6 +10,7 @@ import (
 	"github.com/keep94/birthday"
 	"github.com/keep94/birthday/cmd/remind/common"
 	"github.com/keep94/consume2"
+	"github.com/keep94/toolbox/date_util"
 	"github.com/keep94/toolbox/http_util"
 )
 
@@ -81,14 +82,14 @@ var (
 )
 
 type Handler struct {
-	File string
+	Store birthday.Store
+	Clock date_util.Clock
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var entries []*birthday.Entry
-	err := birthday.ReadFile(
-		h.File,
+	err := h.Store.Read(
 		consume2.Filter(
 			consume2.AppendPtrsTo(&entries),
 			birthday.Query(r.Form.Get("q"))))
@@ -99,7 +100,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http_util.WriteTemplate(w, kTemplate, &view{
 		Values:      http_util.Values{Values: r.Form},
 		Results:     birthday.EntriesSortedByName(entries),
-		CurrentDate: common.ParseDate(r.Form.Get("date")),
+		CurrentDate: common.ParseDate(h.Clock, r.Form.Get("date")),
 	})
 }
 

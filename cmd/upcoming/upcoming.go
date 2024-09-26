@@ -8,6 +8,7 @@ import (
 
 	"github.com/keep94/birthday"
 	"github.com/keep94/consume2"
+	"github.com/keep94/toolbox/date_util"
 )
 
 var (
@@ -16,7 +17,8 @@ var (
 )
 
 var (
-	kFirst100 = consume2.PSlice[birthday.Milestone](0, 100)
+	kFirst100                 = consume2.PSlice[birthday.Milestone](0, 100)
+	kClock    date_util.Clock = date_util.SystemClock{}
 )
 
 func main() {
@@ -38,7 +40,7 @@ func main() {
 	birthday.Remind(
 		entries,
 		birthday.DefaultPeriods,
-		birthday.Today(),
+		birthday.Today(kClock),
 		pipeline.Call(printMilestone),
 	)
 }

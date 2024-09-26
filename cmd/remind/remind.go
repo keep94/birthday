@@ -11,6 +11,7 @@ import (
 	"github.com/keep94/birthday/cmd/remind/search"
 	"github.com/keep94/consume2"
 	"github.com/keep94/context"
+	"github.com/keep94/toolbox/date_util"
 	"github.com/keep94/toolbox/http_util"
 	"github.com/keep94/toolbox/logging"
 	"github.com/keep94/weblogs"
@@ -21,7 +22,8 @@ const (
 )
 
 var (
-	kFirstN = consume2.PSlice[birthday.Milestone](0, kMaxRows)
+	kFirstN                 = consume2.PSlice[birthday.Milestone](0, kMaxRows)
+	kClock  date_util.Clock = date_util.SystemClock{}
 )
 
 var (
@@ -37,11 +39,17 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
+	store := birthday.SystemStore(fFile)
 	http.HandleFunc("/", rootRedirect)
 	http.Handle(
 		"/home",
-		&home.Handler{File: fFile, DaysAhead: fDaysAhead, FirstN: kFirstN})
-	http.Handle("/search", &search.Handler{File: fFile})
+		&home.Handler{
+			Store:          store,
+			DaysAhead:      fDaysAhead,
+			FirstN:         kFirstN,
+			DefaultPeriods: birthday.DefaultPeriods,
+			Clock:          kClock})
+	http.Handle("/search", &search.Handler{Store: store, Clock: kClock})
 	defaultHandler := context.ClearHandler(
 		weblogs.HandlerWithOptions(
 			http.DefaultServeMux,

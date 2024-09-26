@@ -32,8 +32,8 @@ var (
 var yearly = Period{Years: 1}
 
 // Today returns today's date at midnight in UTC.
-func Today() time.Time {
-	y, m, d := time.Now().Date()
+func Today(clock date_util.Clock) time.Time {
+	y, m, d := clock.Now().Date()
 	return date_util.YMD(y, int(m), d)
 }
 

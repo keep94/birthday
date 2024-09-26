@@ -9,6 +9,7 @@ import (
 	"github.com/keep94/birthday"
 	"github.com/keep94/birthday/cmd/remind/common"
 	"github.com/keep94/consume2"
+	"github.com/keep94/toolbox/date_util"
 	"github.com/keep94/toolbox/http_util"
 )
 
@@ -59,16 +60,17 @@ var (
 )
 
 type Handler struct {
-	File      string
-	DaysAhead int
-	FirstN    consume2.Pipeline[birthday.Milestone, birthday.Milestone]
+	Store          birthday.Store
+	DaysAhead      int
+	FirstN         consume2.Pipeline[birthday.Milestone, birthday.Milestone]
+	DefaultPeriods []birthday.Period
+	Clock          date_util.Clock
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	var entries []*birthday.Entry
-	err := birthday.ReadFile(
-		h.File,
+	err := h.Store.Read(
 		consume2.Filter(
 			consume2.AppendPtrsTo(&entries),
 			birthday.Query(r.Form.Get("q"))))
@@ -84,8 +86,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var milestones []*birthday.Milestone
 	birthday.Remind(
 		entries,
-		common.ParsePeriods(r.Form.Get("p")),
-		common.ParseDate(r.Form.Get("date")),
+		common.ParsePeriods(r.Form.Get("p"), h.DefaultPeriods),
+		common.ParseDate(h.Clock, r.Form.Get("date")),
 		pipeline.Run(consume2.AppendPtrsTo(&milestones)),
 	)
 	http_util.WriteTemplate(w, kTemplate, &view{Milestones: milestones})
