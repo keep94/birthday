@@ -1,11 +1,13 @@
 package birthday_test
 
 import (
+	"iter"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/keep94/birthday"
-	"github.com/keep94/consume2"
+	"github.com/keep94/itertools"
 	"github.com/keep94/toolbox/date_util"
 	asserts "github.com/stretchr/testify/assert"
 )
@@ -562,47 +564,50 @@ func TestRemindWithWeeks(t *testing.T) {
 func TestRemind(t *testing.T) {
 	assert := asserts.New(t)
 	currentDate := date_util.YMD(2023, 1, 20)
-	milestones := getMilestonesWithOptions(
-		[]*birthday.Entry{
-			{
-				Name:     "Mark",
-				Birthday: date_util.YMD(2023, 1, 20),
-			},
-			{
-				Name:     "Steve",
-				Birthday: date_util.YMD(0, 2, 29),
-			},
+	entries := []*birthday.Entry{
+		{
+			Name:     "Mark",
+			Birthday: date_util.YMD(2023, 1, 20),
 		},
-		[]birthday.Period{kYears, kThousandDays},
-		currentDate,
-		500)
-	assert.Equal(
-		[]testMilestone{
-			{
-				Name:     "Mark",
-				Date:     date_util.YMD(2023, 1, 20),
-				DaysAway: 0,
-			},
-			{
-				Name:       "Steve",
-				Date:       date_util.YMD(2023, 3, 1),
-				DaysAway:   40,
-				AgeUnknown: true,
-			},
-			{
-				Name:     "Mark",
-				Date:     date_util.YMD(2024, 1, 20),
-				DaysAway: 365,
-				Age:      birthday.Period{Years: 1},
-			},
-			{
-				Name:       "Steve",
-				Date:       date_util.YMD(2024, 2, 29),
-				DaysAway:   405,
-				AgeUnknown: true,
-			},
+		{
+			Name:     "Steve",
+			Birthday: date_util.YMD(0, 2, 29),
 		},
-		milestones)
+	}
+	periods := []birthday.Period{kYears, kThousandDays}
+	seq := getMilestonesWithOptionsSeq(entries, periods, currentDate, 500)
+	expected := []testMilestone{
+		{
+			Name:     "Mark",
+			Date:     date_util.YMD(2023, 1, 20),
+			DaysAway: 0,
+		},
+		{
+			Name:       "Steve",
+			Date:       date_util.YMD(2023, 3, 1),
+			DaysAway:   40,
+			AgeUnknown: true,
+		},
+		{
+			Name:     "Mark",
+			Date:     date_util.YMD(2024, 1, 20),
+			DaysAway: 365,
+			Age:      birthday.Period{Years: 1},
+		},
+		{
+			Name:       "Steve",
+			Date:       date_util.YMD(2024, 2, 29),
+			DaysAway:   405,
+			AgeUnknown: true,
+		},
+	}
+	assert.Equal(expected, slices.Collect(seq))
+	entries[0] = &birthday.Entry{
+		Name:     "Alice",
+		Birthday: date_util.YMD(2023, 1, 12),
+	}
+	periods[0] = kHundredMonths
+	assert.Equal(expected, slices.Collect(seq))
 }
 
 func TestRemindHalfYear(t *testing.T) {
@@ -756,7 +761,7 @@ type testMilestone struct {
 	AgeUnknown bool
 }
 
-func toTestMilestone(milestone birthday.Milestone) testMilestone {
+func toTestMilestone(milestone *birthday.Milestone) testMilestone {
 	return testMilestone{
 		Name:       milestone.EntryPtr.Name,
 		Date:       milestone.Date,
@@ -766,22 +771,27 @@ func toTestMilestone(milestone birthday.Milestone) testMilestone {
 	}
 }
 
+func getMilestonesWithOptionsSeq(
+	entries []*birthday.Entry,
+	periods []birthday.Period,
+	currentDate time.Time,
+	daysAhead int) iter.Seq[testMilestone] {
+	seq := birthday.RemindPtrs(entries, periods, currentDate)
+	seq = itertools.TakeWhile(
+		seq,
+		func(m *birthday.Milestone) bool { return m.DaysAway < daysAhead })
+	return itertools.Map(seq, toTestMilestone)
+}
+
 func getMilestonesWithOptions(
 	entries []*birthday.Entry,
 	periods []birthday.Period,
 	currentDate time.Time,
 	daysAhead int) []testMilestone {
-	var result []testMilestone
-	birthday.Remind(
-		entries,
-		periods,
-		currentDate,
-		consume2.TakeWhile(
-			consume2.Map(consume2.AppendTo(&result), toTestMilestone),
-			func(m birthday.Milestone) bool { return m.DaysAway < daysAhead },
-		),
+	return slices.Collect(
+		getMilestonesWithOptionsSeq(
+			entries, periods, currentDate, daysAhead),
 	)
-	return result
 }
 
 func getMilestones(

@@ -5,12 +5,15 @@ import (
 	"container/heap"
 	"errors"
 	"fmt"
+	"iter"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/keep94/consume2"
+	"github.com/keep94/itertools"
 	"github.com/keep94/toolbox/date_util"
 	"github.com/keep94/toolbox/str_util"
 )
@@ -299,29 +302,43 @@ func Query(query string) func(entry Entry) bool {
 	}
 }
 
-// Remind sends an infinite stream of Milestone instances to consumer
-// for the specified entries and periods starting at the date specified by
-// current. Remind sends Milestone instances to consumer in
-// chronological order.
+// Remind returns all upcoming Milestones for the specified entries and
+// periods starting at the date specified by current. Remind returns
+// Milestone instances in chronological order.
 func Remind(
 	entries []*Entry,
 	periods []Period,
-	current time.Time,
-	consumer consume2.Consumer[Milestone]) {
+	current time.Time) iter.Seq[Milestone] {
 	checkPeriods(periods)
-	mh := createMilestoneHeap(entries, periods, current)
-	if len(mh) == 0 {
-		return
-	}
-	milestone := mh[0].Milestone
-	for consumer.CanConsume() {
-		for !milestone.Less(&mh[0].Milestone) {
-			mh[0].Advance(current)
-			heap.Fix(&mh, 0)
+	entries = slices.Clone(entries)
+	periods = slices.Clone(periods)
+	return func(yield func(Milestone) bool) {
+		mh := createMilestoneHeap(entries, periods, current)
+		if len(mh) == 0 {
+			return
 		}
-		consumer.Consume(milestone)
-		milestone = mh[0].Milestone
+		milestone := mh[0].Milestone
+		for {
+			for !milestone.Less(&mh[0].Milestone) {
+				mh[0].Advance(current)
+				heap.Fix(&mh, 0)
+			}
+			if !yield(milestone) {
+				return
+			}
+			milestone = mh[0].Milestone
+		}
 	}
+}
+
+// RemindPtrs works like Remind except that it returns Milestone pointers.
+func RemindPtrs(
+	entries []*Entry,
+	periods []Period,
+	current time.Time) iter.Seq[*Milestone] {
+	return itertools.Map(
+		Remind(entries, periods, current),
+		func(m Milestone) *Milestone { return &m })
 }
 
 func createMilestoneHeap(

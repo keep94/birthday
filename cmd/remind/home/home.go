@@ -3,12 +3,14 @@ package home
 import (
 	"fmt"
 	"html/template"
+	"iter"
 	"net/http"
 	"strconv"
 
 	"github.com/keep94/birthday"
 	"github.com/keep94/birthday/cmd/remind/common"
 	"github.com/keep94/consume2"
+	"github.com/keep94/itertools"
 	"github.com/keep94/toolbox/date_util"
 	"github.com/keep94/toolbox/http_util"
 )
@@ -62,7 +64,7 @@ var (
 type Handler struct {
 	Store          birthday.Store
 	DaysAhead      int
-	FirstN         consume2.Pipeline[birthday.Milestone, birthday.Milestone]
+	FirstN         int
 	DefaultPeriods []birthday.Period
 	Clock          date_util.Clock
 }
@@ -79,18 +81,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	daysAhead := h.parseDays(r.Form.Get("days"))
-	pipeline := consume2.PTakeWhile(func(m birthday.Milestone) bool {
-		return m.DaysAway < daysAhead
-	})
-	pipeline = consume2.Join(pipeline, h.FirstN)
-	var milestones []*birthday.Milestone
-	birthday.Remind(
+	seq := birthday.RemindPtrs(
 		entries,
 		common.ParsePeriods(r.Form.Get("p"), h.DefaultPeriods),
-		common.ParseDate(h.Clock, r.Form.Get("date")),
-		pipeline.Run(consume2.AppendPtrsTo(&milestones)),
-	)
-	http_util.WriteTemplate(w, kTemplate, &view{Milestones: milestones})
+		common.ParseDate(h.Clock, r.Form.Get("date")))
+	seq = itertools.TakeWhile(
+		seq,
+		func(m *birthday.Milestone) bool { return m.DaysAway < daysAhead })
+	seq = itertools.Take(seq, h.FirstN)
+	http_util.WriteTemplate(w, kTemplate, &view{Milestones: seq})
 }
 
 func (h *Handler) parseDays(daysStr string) int {
@@ -102,7 +101,7 @@ func (h *Handler) parseDays(daysStr string) int {
 }
 
 type view struct {
-	Milestones []*birthday.Milestone
+	Milestones iter.Seq[*birthday.Milestone]
 }
 
 func (b *view) DateStr(milestone *birthday.Milestone) string {

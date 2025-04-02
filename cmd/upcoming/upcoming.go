@@ -8,7 +8,12 @@ import (
 
 	"github.com/keep94/birthday"
 	"github.com/keep94/consume2"
+	"github.com/keep94/itertools"
 	"github.com/keep94/toolbox/date_util"
+)
+
+const (
+	kMaxRows = 100
 )
 
 var (
@@ -17,8 +22,7 @@ var (
 )
 
 var (
-	kFirst100                 = consume2.PSlice[birthday.Milestone](0, 100)
-	kClock    date_util.Clock = date_util.SystemClock{}
+	kClock date_util.Clock = date_util.SystemClock{}
 )
 
 func main() {
@@ -33,19 +37,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	pipeline := consume2.PTakeWhile(func(m birthday.Milestone) bool {
-		return m.DaysAway < fDaysAhead
-	})
-	pipeline = consume2.Join(pipeline, kFirst100)
-	birthday.Remind(
-		entries,
-		birthday.DefaultPeriods,
-		birthday.Today(kClock),
-		pipeline.Call(printMilestone),
-	)
+	seq := birthday.RemindPtrs(
+		entries, birthday.DefaultPeriods, birthday.Today(kClock))
+	seq = itertools.TakeWhile(
+		seq,
+		func(m *birthday.Milestone) bool { return m.DaysAway < fDaysAhead })
+	seq = itertools.Take(seq, kMaxRows)
+	for milestonePtr := range seq {
+		printMilestone(milestonePtr)
+	}
 }
 
-func printMilestone(milestone birthday.Milestone) {
+func printMilestone(milestone *birthday.Milestone) {
 	astricks := " "
 	if milestone.DaysAway == 0 {
 		astricks = "*"

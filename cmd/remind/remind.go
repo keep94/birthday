@@ -9,7 +9,6 @@ import (
 	"github.com/keep94/birthday"
 	"github.com/keep94/birthday/cmd/remind/home"
 	"github.com/keep94/birthday/cmd/remind/search"
-	"github.com/keep94/consume2"
 	"github.com/keep94/context"
 	"github.com/keep94/toolbox/date_util"
 	"github.com/keep94/toolbox/http_util"
@@ -22,8 +21,7 @@ const (
 )
 
 var (
-	kFirstN                 = consume2.PSlice[birthday.Milestone](0, kMaxRows)
-	kClock  date_util.Clock = date_util.SystemClock{}
+	kClock date_util.Clock = date_util.SystemClock{}
 )
 
 var (
@@ -46,7 +44,7 @@ func main() {
 		&home.Handler{
 			Store:          store,
 			DaysAhead:      fDaysAhead,
-			FirstN:         kFirstN,
+			FirstN:         kMaxRows,
 			DefaultPeriods: birthday.DefaultPeriods,
 			Clock:          kClock})
 	http.Handle("/search", &search.Handler{Store: store, Clock: kClock})
