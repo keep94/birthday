@@ -19,7 +19,7 @@ var (
 	kTemplateSpec = `
 <html>
 <head>
-  <title>Birthday Reminders</title>
+  <title>Birthdays</title>
   <style>
   h1 {
     font-size: 40px;
@@ -36,7 +36,11 @@ var (
   </style>
 </head>
 <body>
-  <h1>Birthday Reminders</h1>
+  {{with .BuildId}}
+      <h1>Birthdays {{.}}</h1>
+  {{else}}
+      <h1>Birthdays</h1>
+  {{end}}
   <table border=1>
     <tr>
       <th>Date</th>
@@ -64,7 +68,8 @@ var (
 type Handler struct {
 	Store          birthday.Store
 	DaysAhead      int
-	FirstN         int
+	MaxRows        int
+	BuildId        string
 	DefaultPeriods []birthday.Period
 	Clock          date_util.Clock
 }
@@ -88,8 +93,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	seq = itertools.TakeWhile(
 		seq,
 		func(m *birthday.Milestone) bool { return m.DaysAway < daysAhead })
-	seq = itertools.Take(seq, h.FirstN)
-	http_util.WriteTemplate(w, kTemplate, &view{Milestones: seq})
+	seq = itertools.Take(seq, h.MaxRows)
+	http_util.WriteTemplate(
+		w, kTemplate, &view{Milestones: seq, BuildId: h.BuildId})
 }
 
 func (h *Handler) parseDays(daysStr string) int {
@@ -102,6 +108,7 @@ func (h *Handler) parseDays(daysStr string) int {
 
 type view struct {
 	Milestones iter.Seq[*birthday.Milestone]
+	BuildId    string
 }
 
 func (b *view) DateStr(milestone *birthday.Milestone) string {

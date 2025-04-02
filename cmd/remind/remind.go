@@ -10,6 +10,7 @@ import (
 	"github.com/keep94/birthday/cmd/remind/home"
 	"github.com/keep94/birthday/cmd/remind/search"
 	"github.com/keep94/context"
+	"github.com/keep94/toolbox/build"
 	"github.com/keep94/toolbox/date_util"
 	"github.com/keep94/toolbox/http_util"
 	"github.com/keep94/toolbox/logging"
@@ -39,12 +40,14 @@ func main() {
 	}
 	store := birthday.SystemStore(fFile)
 	http.HandleFunc("/", rootRedirect)
+	version, _ := build.MainVersion()
 	http.Handle(
 		"/home",
 		&home.Handler{
 			Store:          store,
 			DaysAhead:      fDaysAhead,
-			FirstN:         kMaxRows,
+			MaxRows:        kMaxRows,
+			BuildId:        build.BuildId(version),
 			DefaultPeriods: birthday.DefaultPeriods,
 			Clock:          kClock})
 	http.Handle("/search", &search.Handler{Store: store, Clock: kClock})
