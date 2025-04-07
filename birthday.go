@@ -248,9 +248,6 @@ type Milestone struct {
 	// The date of the milestone day
 	Date time.Time
 
-	// How many days in the future this milestone day is.
-	DaysAway int
-
 	// The age of the person on this mileestone day.
 	Age Period
 
@@ -258,13 +255,13 @@ type Milestone struct {
 	AgeUnknown bool
 }
 
-// Less orders Milestones. Less orders first by DaysAway then by Name
+// Less orders Milestones. Less orders first by Date then by Name
 // then by AgeUnknown and finally by Age.
 func (m *Milestone) Less(other *Milestone) bool {
-	if m.DaysAway < other.DaysAway {
+	if m.Date.Before(other.Date) {
 		return true
 	}
-	if m.DaysAway > other.DaysAway {
+	if m.Date.After(other.Date) {
 		return false
 	}
 	if m.EntryPtr.Name < other.EntryPtr.Name {
@@ -320,7 +317,7 @@ func Remind(
 		milestone := mh[0].Milestone
 		for {
 			for !milestone.Less(&mh[0].Milestone) {
-				mh[0].Advance(current)
+				mh[0].Advance()
 				heap.Fix(&mh, 0)
 			}
 			if !yield(milestone) {
@@ -384,17 +381,17 @@ type milestoneGenerator struct {
 func (gm *milestoneGenerator) Init(
 	entry *Entry, period Period, current time.Time) {
 	gm.Generator.Init(entry, period, current)
-	gm.Advance(current)
+	gm.Advance()
 }
 
-func (gm *milestoneGenerator) Advance(current time.Time) {
-	gm.Milestone = gm.Generator.Next(current)
+func (gm *milestoneGenerator) Advance() {
+	gm.Milestone = gm.Generator.Next()
 }
 
 type generator struct {
-	entry  *Entry
-	period Period
-	count  int
+	entryPtr *Entry
+	period   Period
+	count    int
 }
 
 func (g *generator) Init(
@@ -404,20 +401,19 @@ func (g *generator) Init(
 	if count < 0 {
 		count = 0
 	}
-	*g = generator{entry: entry, period: period, count: count}
+	*g = generator{entryPtr: entry, period: period, count: count}
 }
 
-func (g *generator) Next(current time.Time) Milestone {
-	hasYear := HasYear(g.entry.Birthday)
+func (g *generator) Next() Milestone {
+	hasYear := HasYear(g.entryPtr.Birthday)
 	var age Period
 	if hasYear {
 		age = g.period.Multiply(g.count)
 	}
-	nextMilestone := g.period.Add(g.entry.Birthday, g.count)
+	nextMilestone := g.period.Add(g.entryPtr.Birthday, g.count)
 	result := Milestone{
-		EntryPtr:   g.entry,
+		EntryPtr:   g.entryPtr,
 		Date:       nextMilestone,
-		DaysAway:   asDays(nextMilestone) - asDays(current),
 		Age:        age,
 		AgeUnknown: !hasYear,
 	}

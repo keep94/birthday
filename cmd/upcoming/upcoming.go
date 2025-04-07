@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/keep94/birthday"
 	"github.com/keep94/consume2"
@@ -37,20 +38,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	seq := birthday.RemindPtrs(
-		entries, birthday.DefaultPeriods, birthday.Today(kClock))
+	today := birthday.Today(kClock)
+	endTime := today.AddDate(0, 0, fDaysAhead)
+	seq := birthday.RemindPtrs(entries, birthday.DefaultPeriods, today)
 	seq = itertools.TakeWhile(
 		seq,
-		func(m *birthday.Milestone) bool { return m.DaysAway < fDaysAhead })
+		func(m *birthday.Milestone) bool { return m.Date.Before(endTime) })
 	seq = itertools.Take(seq, kMaxRows)
 	for milestonePtr := range seq {
-		printMilestone(milestonePtr)
+		printMilestone(milestonePtr, today)
 	}
 }
 
-func printMilestone(milestone *birthday.Milestone) {
+func printMilestone(milestone *birthday.Milestone, today time.Time) {
 	astricks := " "
-	if milestone.DaysAway == 0 {
+	if milestone.Date.Equal(today) {
 		astricks = "*"
 	}
 	fmt.Printf(

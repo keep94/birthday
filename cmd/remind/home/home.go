@@ -6,6 +6,7 @@ import (
 	"iter"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/keep94/birthday"
 	"github.com/keep94/birthday/cmd/remind/common"
@@ -86,16 +87,18 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	daysAhead := h.parseDays(r.Form.Get("days"))
+	today := common.ParseDate(h.Clock, r.Form.Get("date"))
+	endDate := today.AddDate(0, 0, daysAhead)
 	seq := birthday.RemindPtrs(
 		entries,
 		common.ParsePeriods(r.Form.Get("p"), h.DefaultPeriods),
-		common.ParseDate(h.Clock, r.Form.Get("date")))
+		today)
 	seq = itertools.TakeWhile(
 		seq,
-		func(m *birthday.Milestone) bool { return m.DaysAway < daysAhead })
+		func(m *birthday.Milestone) bool { return m.Date.Before(endDate) })
 	seq = itertools.Take(seq, h.MaxRows)
 	http_util.WriteTemplate(
-		w, kTemplate, &view{Milestones: seq, BuildId: h.BuildId})
+		w, kTemplate, &view{Milestones: seq, BuildId: h.BuildId, today: today})
 }
 
 func (h *Handler) parseDays(daysStr string) int {
@@ -109,6 +112,7 @@ func (h *Handler) parseDays(daysStr string) int {
 type view struct {
 	Milestones iter.Seq[*birthday.Milestone]
 	BuildId    string
+	today      time.Time
 }
 
 func (b *view) DateStr(milestone *birthday.Milestone) string {
@@ -116,7 +120,7 @@ func (b *view) DateStr(milestone *birthday.Milestone) string {
 }
 
 func (v *view) Today(milestone *birthday.Milestone) bool {
-	return milestone.DaysAway == 0
+	return milestone.Date.Equal(v.today)
 }
 
 func init() {

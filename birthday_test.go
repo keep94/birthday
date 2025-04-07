@@ -232,7 +232,6 @@ func TestMilestonesBirthdayNextYear(t *testing.T) {
 		[]testMilestone{
 			{
 				Date:       date_util.YMD(2021, 1, 26),
-				DaysAway:   103,
 				AgeUnknown: true,
 			},
 		},
@@ -248,12 +247,10 @@ func TestMilestonesNoYear(t *testing.T) {
 		[]testMilestone{
 			{
 				Date:       date_util.YMD(2021, 9, 25),
-				DaysAway:   364,
 				AgeUnknown: true,
 			},
 			{
 				Date:       date_util.YMD(2022, 9, 25),
-				DaysAway:   729,
 				AgeUnknown: true,
 			},
 		},
@@ -271,12 +268,10 @@ func TestMilestonesNoYear(t *testing.T) {
 		[]testMilestone{
 			{
 				Date:       date_util.YMD(2020, 9, 25),
-				DaysAway:   0,
 				AgeUnknown: true,
 			},
 			{
 				Date:       date_util.YMD(2021, 9, 25),
-				DaysAway:   365,
 				AgeUnknown: true,
 			},
 		},
@@ -299,29 +294,24 @@ func TestMilestonesYearBefore(t *testing.T) {
 	assert.Equal(
 		[]testMilestone{
 			{
-				Date:     date_util.YMD(2001, 9, 22),
-				DaysAway: 0,
-				Age:      birthday.Period{Years: 30},
+				Date: date_util.YMD(2001, 9, 22),
+				Age:  birthday.Period{Years: 30},
 			},
 			{
-				Date:     date_util.YMD(2001, 11, 3),
-				DaysAway: 42,
-				Age:      birthday.Period{Days: 11000},
+				Date: date_util.YMD(2001, 11, 3),
+				Age:  birthday.Period{Days: 11000},
 			},
 			{
-				Date:     date_util.YMD(2002, 9, 22),
-				DaysAway: 365,
-				Age:      birthday.Period{Years: 31},
+				Date: date_util.YMD(2002, 9, 22),
+				Age:  birthday.Period{Years: 31},
 			},
 			{
-				Date:     date_util.YMD(2003, 9, 22),
-				DaysAway: 730,
-				Age:      birthday.Period{Years: 32},
+				Date: date_util.YMD(2003, 9, 22),
+				Age:  birthday.Period{Years: 32},
 			},
 			{
-				Date:     date_util.YMD(2004, 7, 30),
-				DaysAway: 1042,
-				Age:      birthday.Period{Days: 12000},
+				Date: date_util.YMD(2004, 7, 30),
+				Age:  birthday.Period{Days: 12000},
 			},
 		},
 		milestones)
@@ -365,23 +355,19 @@ func TestMilestonesYearAfter(t *testing.T) {
 	assert.Equal(
 		[]testMilestone{
 			{
-				Date:     date_util.YMD(2024, 2, 4),
-				DaysAway: 1211,
+				Date: date_util.YMD(2024, 2, 4),
 			},
 			{
-				Date:     date_util.YMD(2025, 2, 4),
-				DaysAway: 1577,
-				Age:      birthday.Period{Years: 1},
+				Date: date_util.YMD(2025, 2, 4),
+				Age:  birthday.Period{Years: 1},
 			},
 			{
-				Date:     date_util.YMD(2026, 2, 4),
-				DaysAway: 1942,
-				Age:      birthday.Period{Years: 2},
+				Date: date_util.YMD(2026, 2, 4),
+				Age:  birthday.Period{Years: 2},
 			},
 			{
-				Date:     date_util.YMD(2026, 10, 31),
-				DaysAway: 2211,
-				Age:      birthday.Period{Days: 1000},
+				Date: date_util.YMD(2026, 10, 31),
+				Age:  birthday.Period{Days: 1000},
 			},
 		},
 		milestones)
@@ -440,9 +426,8 @@ func TestRemindNoYears(t *testing.T) {
 	assert.Equal(
 		[]testMilestone{
 			{
-				Name:     "Mark",
-				Date:     date_util.YMD(2023, 1, 20),
-				DaysAway: 0,
+				Name: "Mark",
+				Date: date_util.YMD(2023, 1, 20),
 			},
 		},
 		milestones)
@@ -464,70 +449,59 @@ func TestRemindWithEverything(t *testing.T) {
 		1001)
 	assert.Equal([]testMilestone{
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2017, 6, 11),
-			DaysAway: 0,
-			Age:      birthday.Period{Days: 18000},
+			Name: "Mark",
+			Date: date_util.YMD(2017, 6, 11),
+			Age:  birthday.Period{Days: 18000},
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2017, 8, 29),
-			DaysAway: 79,
-			Age:      birthday.Period{Years: 49, Months: 6},
+			Name: "Mark",
+			Date: date_util.YMD(2017, 8, 29),
+			Age:  birthday.Period{Years: 49, Months: 6},
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2017, 12, 28),
-			DaysAway: 200,
-			Age:      birthday.Period{Weeks: 2600},
+			Name: "Mark",
+			Date: date_util.YMD(2017, 12, 28),
+			Age:  birthday.Period{Weeks: 2600},
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2018, 3, 1),
-			DaysAway: 263,
-			Age:      birthday.Period{Years: 50},
+			Name: "Mark",
+			Date: date_util.YMD(2018, 3, 1),
+			Age:  birthday.Period{Years: 50},
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2018, 3, 1),
-			DaysAway: 263,
-			Age:      birthday.Period{Months: 600},
+			Name: "Mark",
+			Date: date_util.YMD(2018, 3, 1),
+			Age:  birthday.Period{Months: 600},
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2018, 8, 29),
-			DaysAway: 444,
-			Age:      birthday.Period{Years: 50, Months: 6},
+			Name: "Mark",
+			Date: date_util.YMD(2018, 8, 29),
+			Age:  birthday.Period{Years: 50, Months: 6},
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2019, 3, 1),
-			DaysAway: 628,
-			Age:      birthday.Period{Years: 51},
+			Name: "Mark",
+			Date: date_util.YMD(2019, 3, 1),
+			Age:  birthday.Period{Years: 51},
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2019, 8, 29),
-			DaysAway: 809,
-			Age:      birthday.Period{Years: 51, Months: 6},
+			Name: "Mark",
+			Date: date_util.YMD(2019, 8, 29),
+			Age:  birthday.Period{Years: 51, Months: 6},
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2019, 11, 28),
-			DaysAway: 900,
-			Age:      birthday.Period{Weeks: 2700},
+			Name: "Mark",
+			Date: date_util.YMD(2019, 11, 28),
+			Age:  birthday.Period{Weeks: 2700},
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2020, 2, 29),
-			DaysAway: 993,
-			Age:      birthday.Period{Years: 52},
+			Name: "Mark",
+			Date: date_util.YMD(2020, 2, 29),
+			Age:  birthday.Period{Years: 52},
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2020, 3, 7),
-			DaysAway: 1000,
-			Age:      birthday.Period{Days: 19000},
+			Name: "Mark",
+			Date: date_util.YMD(2020, 3, 7),
+			Age:  birthday.Period{Days: 19000},
 		},
 	}, milestones)
 }
@@ -547,16 +521,14 @@ func TestRemindWithWeeks(t *testing.T) {
 		701)
 	assert.Equal([]testMilestone{
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2017, 12, 28),
-			DaysAway: 0,
-			Age:      birthday.Period{Weeks: 2600},
+			Name: "Mark",
+			Date: date_util.YMD(2017, 12, 28),
+			Age:  birthday.Period{Weeks: 2600},
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2019, 11, 28),
-			DaysAway: 700,
-			Age:      birthday.Period{Weeks: 2700},
+			Name: "Mark",
+			Date: date_util.YMD(2019, 11, 28),
+			Age:  birthday.Period{Weeks: 2700},
 		},
 	}, milestones)
 }
@@ -578,26 +550,22 @@ func TestRemind(t *testing.T) {
 	seq := getMilestonesWithOptionsSeq(entries, periods, currentDate, 500)
 	expected := []testMilestone{
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2023, 1, 20),
-			DaysAway: 0,
+			Name: "Mark",
+			Date: date_util.YMD(2023, 1, 20),
 		},
 		{
 			Name:       "Steve",
 			Date:       date_util.YMD(2023, 3, 1),
-			DaysAway:   40,
 			AgeUnknown: true,
 		},
 		{
-			Name:     "Mark",
-			Date:     date_util.YMD(2024, 1, 20),
-			DaysAway: 365,
-			Age:      birthday.Period{Years: 1},
+			Name: "Mark",
+			Date: date_util.YMD(2024, 1, 20),
+			Age:  birthday.Period{Years: 1},
 		},
 		{
 			Name:       "Steve",
 			Date:       date_util.YMD(2024, 2, 29),
-			DaysAway:   405,
 			AgeUnknown: true,
 		},
 	}
@@ -630,28 +598,24 @@ func TestRemindHalfYear(t *testing.T) {
 	assert.Equal(
 		[]testMilestone{
 			{
-				Name:     "Mark",
-				Date:     date_util.YMD(2021, 3, 27),
-				DaysAway: 7,
-				Age:      birthday.Period{Years: 36},
+				Name: "Mark",
+				Date: date_util.YMD(2021, 3, 27),
+				Age:  birthday.Period{Years: 36},
 			},
 			{
-				Name:     "Steve",
-				Date:     date_util.YMD(2021, 3, 27),
-				DaysAway: 7,
-				Age:      birthday.Period{Years: 37},
+				Name: "Steve",
+				Date: date_util.YMD(2021, 3, 27),
+				Age:  birthday.Period{Years: 37},
 			},
 			{
-				Name:     "Mark",
-				Date:     date_util.YMD(2021, 9, 27),
-				DaysAway: 191,
-				Age:      birthday.Period{Years: 36, Months: 6},
+				Name: "Mark",
+				Date: date_util.YMD(2021, 9, 27),
+				Age:  birthday.Period{Years: 36, Months: 6},
 			},
 			{
-				Name:     "Steve",
-				Date:     date_util.YMD(2021, 9, 27),
-				DaysAway: 191,
-				Age:      birthday.Period{Years: 37, Months: 6},
+				Name: "Steve",
+				Date: date_util.YMD(2021, 9, 27),
+				Age:  birthday.Period{Years: 37, Months: 6},
 			},
 		},
 		milestones)
@@ -668,22 +632,19 @@ func TestRemindAgain(t *testing.T) {
 	assert.Equal(
 		[]testMilestone{
 			{
-				Name:     "Matt",
-				Date:     date_util.YMD(2023, 3, 1),
-				DaysAway: 40,
-				Age:      birthday.Period{Years: 71},
+				Name: "Matt",
+				Date: date_util.YMD(2023, 3, 1),
+				Age:  birthday.Period{Years: 71},
 			},
 			{
-				Name:     "Matt",
-				Date:     date_util.YMD(2023, 5, 7),
-				DaysAway: 107,
-				Age:      birthday.Period{Days: 26000},
+				Name: "Matt",
+				Date: date_util.YMD(2023, 5, 7),
+				Age:  birthday.Period{Days: 26000},
 			},
 			{
-				Name:     "Matt",
-				Date:     date_util.YMD(2024, 2, 29),
-				DaysAway: 405,
-				Age:      birthday.Period{Years: 72},
+				Name: "Matt",
+				Date: date_util.YMD(2024, 2, 29),
+				Age:  birthday.Period{Years: 72},
 			},
 		},
 		milestones)
@@ -756,7 +717,6 @@ func TestEntriesSortedByName(t *testing.T) {
 type testMilestone struct {
 	Name       string
 	Date       time.Time
-	DaysAway   int
 	Age        birthday.Period
 	AgeUnknown bool
 }
@@ -765,7 +725,6 @@ func toTestMilestone(milestone *birthday.Milestone) testMilestone {
 	return testMilestone{
 		Name:       milestone.EntryPtr.Name,
 		Date:       milestone.Date,
-		DaysAway:   milestone.DaysAway,
 		Age:        milestone.Age,
 		AgeUnknown: milestone.AgeUnknown,
 	}
@@ -776,10 +735,11 @@ func getMilestonesWithOptionsSeq(
 	periods []birthday.Period,
 	currentDate time.Time,
 	daysAhead int) iter.Seq[testMilestone] {
+	endTime := currentDate.AddDate(0, 0, daysAhead)
 	seq := birthday.RemindPtrs(entries, periods, currentDate)
 	seq = itertools.TakeWhile(
 		seq,
-		func(m *birthday.Milestone) bool { return m.DaysAway < daysAhead })
+		func(m *birthday.Milestone) bool { return m.Date.Before(endTime) })
 	return itertools.Map(seq, toTestMilestone)
 }
 
