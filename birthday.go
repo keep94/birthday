@@ -248,7 +248,7 @@ type Milestone struct {
 	// The date of the milestone day
 	Date time.Time
 
-	// The age of the person on this mileestone day.
+	// The age of the person on this milestone day.
 	Age Period
 
 	// If true, age is unknown
@@ -316,12 +316,12 @@ func Remind(
 		}
 		milestone := mh[0].Milestone
 		for {
+			if !yield(milestone) {
+				return
+			}
 			for !milestone.Less(&mh[0].Milestone) {
 				mh[0].Advance()
 				heap.Fix(&mh, 0)
-			}
-			if !yield(milestone) {
-				return
 			}
 			milestone = mh[0].Milestone
 		}
