@@ -248,7 +248,7 @@ type Milestone struct {
 	// The date of the milestone day
 	Date time.Time
 
-	// The age of the person on this milestone day.
+	// The age of the person on this milestone day
 	Age Period
 
 	// If true, age is unknown
