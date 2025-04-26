@@ -42,9 +42,9 @@ func main() {
 	endTime := today.AddDate(0, 0, fDaysAhead)
 	seq := birthday.RemindPtrs(entries, birthday.DefaultPeriods, today)
 	seq = itertools.TakeWhile(
-		seq,
-		func(m *birthday.Milestone) bool { return m.Date.Before(endTime) })
-	seq = itertools.Take(seq, kMaxRows)
+		func(m *birthday.Milestone) bool { return m.Date.Before(endTime) },
+		seq)
+	seq = itertools.Take(kMaxRows, seq)
 	for milestonePtr := range seq {
 		printMilestone(milestonePtr, today)
 	}

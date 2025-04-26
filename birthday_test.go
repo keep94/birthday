@@ -738,9 +738,9 @@ func getMilestonesWithOptionsSeq(
 	endTime := currentDate.AddDate(0, 0, daysAhead)
 	seq := birthday.RemindPtrs(entries, periods, currentDate)
 	seq = itertools.TakeWhile(
-		seq,
-		func(m *birthday.Milestone) bool { return m.Date.Before(endTime) })
-	return itertools.Map(seq, toTestMilestone)
+		func(m *birthday.Milestone) bool { return m.Date.Before(endTime) },
+		seq)
+	return itertools.Map(toTestMilestone, seq)
 }
 
 func getMilestonesWithOptions(

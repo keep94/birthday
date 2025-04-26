@@ -4,8 +4,8 @@ github.com/keep94/consume2 v0.7.0 h1:JbS/XxmPbHgEG+1pvGEGc192nCOEx+S/DmJBZz9fkvQ
 github.com/keep94/consume2 v0.7.0/go.mod h1:oI2GS5jRbaWtXBO3wLiqr+dHpNmEyOgAJd4C1Jxp9o0=
 github.com/keep94/context v0.1.0 h1:FecPv0geuWcdf+8nRmF5RnF6Sk2ahy26jFt7uRivmUw=
 github.com/keep94/context v0.1.0/go.mod h1:IXF7ZIYvKxmGCPiN5tJYbhv5AWaxIDclpOQHuzJsxLI=
-github.com/keep94/itertools v0.3.0 h1:7Lpn/rPZkmaFxHYh7yBMALkPWuBOODDi3PxTFYETIXE=
-github.com/keep94/itertools v0.3.0/go.mod h1:/EVKlNtKb7+Fk/viCGQbRQLqip4hU3rftdrdAC1DpKw=
+github.com/keep94/itertools v0.6.0 h1:TZgpyPPC/DWOHEGTyG8AJ3+9iw30DVypRY0sk2cZopc=
+github.com/keep94/itertools v0.6.0/go.mod h1:/EVKlNtKb7+Fk/viCGQbRQLqip4hU3rftdrdAC1DpKw=
 github.com/keep94/toolbox v0.10.0 h1:Oc1HgcwmJfHjx9jOiUyGctMEhGcaOm4kWP+F5X9E2ME=
 github.com/keep94/toolbox v0.10.0/go.mod h1:24PicnIycd6JZJwdE3+7MewUw3GNYAsDM1FaHDwiBvY=
 github.com/keep94/weblogs v1.0.1 h1:sEN2JFqTPkc6BkCxwCKNXQuzh2h8eHLDLiCH2/KMWmM=

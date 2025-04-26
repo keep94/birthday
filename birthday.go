@@ -334,8 +334,8 @@ func RemindPtrs(
 	periods []Period,
 	current time.Time) iter.Seq[*Milestone] {
 	return itertools.Map(
-		Remind(entries, periods, current),
-		func(m Milestone) *Milestone { return &m })
+		func(m Milestone) *Milestone { return &m },
+		Remind(entries, periods, current))
 }
 
 func createMilestoneHeap(

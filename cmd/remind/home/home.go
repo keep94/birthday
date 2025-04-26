@@ -94,9 +94,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		common.ParsePeriods(r.Form.Get("p"), h.DefaultPeriods),
 		today)
 	seq = itertools.TakeWhile(
-		seq,
-		func(m *birthday.Milestone) bool { return m.Date.Before(endDate) })
-	seq = itertools.Take(seq, h.MaxRows)
+		func(m *birthday.Milestone) bool { return m.Date.Before(endDate) },
+		seq)
+	seq = itertools.Take(h.MaxRows, seq)
 	http_util.WriteTemplate(
 		w, kTemplate, &view{Milestones: seq, BuildId: h.BuildId, today: today})
 }
