@@ -307,10 +307,9 @@ func Remind(
 	periods []Period,
 	current time.Time) iter.Seq[Milestone] {
 	checkPeriods(periods)
-	entries = slices.Clone(entries)
-	periods = slices.Clone(periods)
+	base := createMilestoneBase(entries, periods, current)
 	return func(yield func(Milestone) bool) {
-		mh := createMilestoneHeap(entries, periods, current)
+		mh := createMilestoneHeap(base)
 		if len(mh) == 0 {
 			return
 		}
@@ -338,8 +337,10 @@ func RemindPtrs(
 		Remind(entries, periods, current))
 }
 
-func createMilestoneHeap(
-	entries []*Entry, periods []Period, current time.Time) milestoneHeap {
+func createMilestoneBase(
+	entries []*Entry,
+	periods []Period,
+	current time.Time) []milestoneGenerator {
 	size := 0
 	for i := range entries {
 		hasYear := HasYear(entries[i].Birthday)
@@ -349,7 +350,7 @@ func createMilestoneHeap(
 			}
 		}
 	}
-	result := allocateSpaceForMilestoneHeap(size)
+	result := make([]milestoneGenerator, size)
 	index := 0
 	for i := range entries {
 		hasYear := HasYear(entries[i].Birthday)
@@ -360,16 +361,16 @@ func createMilestoneHeap(
 			}
 		}
 	}
-	heap.Init(&result)
 	return result
 }
 
-func allocateSpaceForMilestoneHeap(size int) milestoneHeap {
-	allocatedSpace := make([]milestoneGenerator, size)
-	result := make(milestoneHeap, size)
+func createMilestoneHeap(base []milestoneGenerator) milestoneHeap {
+	allocatedSpace := slices.Clone(base)
+	result := make(milestoneHeap, len(allocatedSpace))
 	for i := range result {
 		result[i] = &allocatedSpace[i]
 	}
+	heap.Init(&result)
 	return result
 }
 
