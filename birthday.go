@@ -308,11 +308,11 @@ func Remind(
 	current time.Time) iter.Seq[Milestone] {
 	checkPeriods(periods)
 	base := createMilestoneBase(entries, periods, current)
+	if len(base) == 0 {
+		return itertools.Chain[Milestone]()
+	}
 	return func(yield func(Milestone) bool) {
 		mh := createMilestoneHeap(base)
-		if len(mh) == 0 {
-			return
-		}
 		milestone := mh[0].Milestone
 		for {
 			if !yield(milestone) {
@@ -349,6 +349,9 @@ func createMilestoneBase(
 				size++
 			}
 		}
+	}
+	if size == 0 {
+		return nil
 	}
 	result := make([]milestoneGenerator, size)
 	index := 0
